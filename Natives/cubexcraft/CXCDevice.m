@@ -261,7 +261,9 @@ static NSString *cxcProcessMemoryDetails(void) {
 #pragma mark - Шейдеры
 
 + (BOOL)autoShaders {
-    return self.effectiveQuality == CXCQualityMax;
+    // 25.10: с шейдерами Sodium через пару минут падает на realloc (OutOfMemoryError при запасе 1,6 ГБ, причина
+    // ищется — SCRUM-363). Пока «Авто» = выключены; вручную «Вкл» по-прежнему можно. Было: только на «Максимуме»
+    return NO;
 }
 
 + (BOOL)effectiveShaders {
