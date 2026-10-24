@@ -113,11 +113,15 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
 }
 
 - (NSDictionary *)fetchProfile:(NSString *)token error:(NSString **)error {
-    NSArray *profiles;
+    // Только мобильные профили (есть поле mobile): на неизвестную платформу сервер отдаёт десктопные — с Sodium/Iris,
+    // которые на телефоне не работают. Пока у сайта нет ?platform=ios, берём сборку Android — она та же.
+    NSMutableArray *profiles = [NSMutableArray new];
     for (NSString *platform in @[@"ios", @"android"]) {
         NSDictionary *json = [CXCApi getSync:[@"/profiles?platform=" stringByAppendingString:platform] token:token error:error];
         if (!json) return nil;
-        profiles = json[@"profiles"];
+        for (NSDictionary *p in json[@"profiles"]) {
+            if ([p[@"mobile"] isKindOfClass:NSDictionary.class]) [profiles addObject:p];
+        }
         if (profiles.count) break;
     }
     for (NSDictionary *p in profiles) {
@@ -208,8 +212,8 @@ static NSString *mavenName(NSString *rel) {
         NSString *rel, *url;
         NSArray *meta;
         if ([entry hasPrefix:@"@cxl/"]) {
-            // своя папка лаунчера: ванильный authlib 6.0.54 вместо Gravit
-            NSString *key = [entry substringFromIndex:5];
+            // своя папка лаунчера (/cxl/libs, манифест без «libs/»): ванильный authlib 6.0.54 вместо Gravit
+            NSString *key = [entry hasPrefix:@"@cxl/libs/"] ? [entry substringFromIndex:10] : entry.lastPathComponent;
             meta = cxlManifest[@"files"][key];
             url = [cxlManifest[@"base"] stringByAppendingString:[self urlEncodePath:key]];
             rel = [key.lastPathComponent hasPrefix:@"authlib-"] ?
