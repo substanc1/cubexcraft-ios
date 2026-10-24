@@ -315,7 +315,9 @@
 // Check if the account has permission to download
 - (BOOL)checkAccessWithDialog:(BOOL)show {
     // for now
-    BOOL accessible = [BaseAuthenticator.current.authData[@"username"] hasPrefix:@"Demo."] || BaseAuthenticator.current.authData[@"xboxGamertag"] != nil;
+    BOOL accessible = [BaseAuthenticator.current.authData[@"username"] hasPrefix:@"Demo."] || BaseAuthenticator.current.authData[@"xboxGamertag"] != nil ||
+        // CubeXCraft: вход аккаунтом сервера (как в десктопном лаунчере CubeXCraft)
+        [BaseAuthenticator.current isKindOfClass:CubeXCraftAuthenticator.class];
     if (!accessible) {
         [self.progress cancel];
         if (show) {
