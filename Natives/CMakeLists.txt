@@ -195,6 +195,7 @@ target_link_libraries(AngelAuraAmethyst
   "-framework AuthenticationServices"
   "-framework AVFoundation"
   "-framework CAltKit"
+  "-framework CFNetwork"
   "-framework CoreFoundation"
   "-framework CoreGraphics"
   "-framework CoreImage"
