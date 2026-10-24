@@ -298,6 +298,10 @@ jre: native
 
 dep_mg:
 	echo '[Amethyst v$(VERSION)] dep_mg - start'
+	# CubeXCraft: свои правки MobileGlues (iris_Entity для ANGLE/Metal), накладываются один раз
+	cd $(SOURCEDIR)/Natives/external/MobileGlues && for p in $(SOURCEDIR)/Natives/cubexcraft/patches/mobileglues-*.patch; do \
+		git apply --reverse --check "$$p" 2>/dev/null || git apply "$$p" || exit 1; \
+	done
 	mkdir -p $(WORKINGDIR)/mobileglues
 	cd $(WORKINGDIR)/mobileglues && cmake \
 		-DMACOS="1" \

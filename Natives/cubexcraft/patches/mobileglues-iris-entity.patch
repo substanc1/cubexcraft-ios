@@ -1,0 +1,43 @@
+diff --git a/src/main/cpp/gl/shader.cpp b/src/main/cpp/gl/shader.cpp
+index e80fdf7..59d8c47 100644
+--- a/src/main/cpp/gl/shader.cpp
++++ b/src/main/cpp/gl/shader.cpp
+@@ -3,6 +3,8 @@
+ //
+ 
+ #include <cctype>
++#include <cstring>
++#include <regex>
+ #include "shader.h"
+ 
+ #include <GL/gl.h>
+@@ -49,6 +51,20 @@ bool check_if_sampler_buffer_used(std::string str) {
+     return str.find("samplerBuffer") != std::string::npos;
+ }
+ 
++// CubeXCraft: Iris declares `in ivec3 iris_Entity` but feeds it as GL_UNSIGNED_SHORT through glVertexAttribIPointer.
++// Desktop drivers accept the sign mismatch; ANGLE on Metal (iOS) cannot read ushort3 into int3, so with a shader pack
++// entities, the hand and text were not drawn at all. Declare it unsigned and convert every use back to ivec3.
++static void cxc_fix_iris_entity_attrib(std::string& src) {
++    if (src.find("iris_Entity") == std::string::npos) return;
++    static const std::regex decl(R"(\bin\s+ivec3\s+iris_Entity\s*;)");
++    if (!std::regex_search(src, decl)) return;
++    src = std::regex_replace(src, decl, "in uvec3 CXC_IRIS_ENTITY_DECL;");
++    static const std::regex use(R"(\biris_Entity\b)");
++    src = std::regex_replace(src, use, "ivec3(iris_Entity)");
++    size_t pos = src.find("CXC_IRIS_ENTITY_DECL");
++    src.replace(pos, strlen("CXC_IRIS_ENTITY_DECL"), "iris_Entity");
++}
++
+ void glShaderSource(GLuint shader, GLsizei count, const GLchar *const* string, const GLint *length) {    
+     LOG()
+     shaderInfo.id = 0;
+@@ -71,6 +87,8 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar *const* string, c
+         }
+     }
+ 
++    cxc_fix_iris_entity_attrib(glsl_src);
++
+     bool is_sampler_buffer_emulated = 
+         hardware->emulate_texture_buffer && check_if_sampler_buffer_used(glsl_src);
+ 
