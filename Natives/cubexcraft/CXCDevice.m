@@ -189,10 +189,19 @@
     return self.autoShaders;
 }
 
-// iris.properties — key=value; пак — наш CubeXCraft_shaders (Complementary под GregTech) из сборки ПК
+// Профиль MEDIUM нашего пака (Complementary Reimagined, shaders.properties): с HIGH на iPhone 16 Pro было 20 кадров
+// (тени 2048 на 192 блока, лучи света, отражения на блоках). Тени — на дальность прорисовки «Максимума» (8 чанков).
+static NSString *const kShaderProfileMedium = @"SHADOW_QUALITY=1 shadowDistance=128.0 ENTITY_SHADOWS_DEFINE=-1 "
+    "WATER_REFLECT_QUALITY=2 BLOCK_REFLECT_QUALITY=1 LIGHTSHAFT_QUALI_DEFINE=1 SSAO_QUALI_DEFINE=2 FXAA_DEFINE=1 "
+    "DETAIL_QUALITY=2 CLOUD_QUALITY=2 ANISOTROPIC_FILTER=0 COLORED_LIGHTING=0";
+
+// iris.properties — key=value; пак — наш CubeXCraft_shaders (Complementary под GregTech) из сборки ПК.
+// С шейдерами — профиль MEDIUM и 75 % разрешения (video.resolution Amethyst): шейдеры считают каждый пиксель,
+// а у 16 Pro экран 2622×1206; 75 % — вдвое меньше пикселей, на такой плотности экрана почти не заметно.
+// Всё — только при смене выбора (метка «:2» — версия этих настроек): правки игрока в игре не затираются.
 + (void)applyShadersToGameDir:(NSString *)gameDir {
     BOOL on = self.effectiveShaders;
-    NSString *key = on ? @"on" : @"off";
+    NSString *key = on ? @"on:2" : @"off:2";
     NSString *path = [gameDir stringByAppendingPathComponent:@"config/iris.properties"];
     NSString *markPath = [gameDir stringByAppendingPathComponent:@".cxc-shaders"];
     NSString *applied = [NSString stringWithContentsOfFile:markPath encoding:NSUTF8StringEncoding error:nil];
@@ -219,10 +228,18 @@
     }
     [NSFileManager.defaultManager createDirectoryAtPath:path.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
     NSString *out = [[lines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
-    if ([out writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
-        [key writeToFile:markPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
-        NSLog(@"[CXC] iris.properties: шейдеры %@ (%@)", on ? @"включены" : @"выключены", pack ?: @"пак не найден");
+    if (![out writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil]) return;
+    if (on && pack) {
+        // настройки пака у Iris — shaderpacks/<пак>.txt
+        NSString *profile = [[kShaderProfileMedium componentsSeparatedByString:@" "] componentsJoinedByString:@"\n"];
+        NSString *packOptions = [[gameDir stringByAppendingPathComponent:@"shaderpacks"]
+            stringByAppendingPathComponent:[pack stringByAppendingString:@".txt"]];
+        [[profile stringByAppendingString:@"\n"] writeToFile:packOptions atomically:YES encoding:NSUTF8StringEncoding error:nil];
     }
+    setPrefInt(@"video.resolution", on ? 75 : 100);
+    [key writeToFile:markPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    NSLog(@"[CXC] iris.properties: шейдеры %@ (%@)%@", on ? @"включены" : @"выключены", pack ?: @"пак не найден",
+        on ? @", профиль MEDIUM, разрешение 75 %" : @", разрешение 100 %");
 }
 
 @end
