@@ -69,9 +69,12 @@ typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
     }
 }
 
-// лаунчер — только вертикально (на iPad — как удобно)
+// лаунчер — только вертикально (на iPad — как удобно); на время запуска игры — горизонтально
+static BOOL cxcLandscapeForGame = NO;
+
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad ? UIInterfaceOrientationMaskAll : UIInterfaceOrientationMaskPortrait;
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) return UIInterfaceOrientationMaskAll;
+    return cxcLandscapeForGame ? UIInterfaceOrientationMaskLandscape : UIInterfaceOrientationMaskPortrait;
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
@@ -417,7 +420,39 @@ static NSString *modName(NSString *file) {
 
 @end
 
+// ждём, пока окно станет горизонтальным (до 2 с), и ещё чуть-чуть — чтобы размеры экрана игры были верные
+static void cxcWaitLandscape(UIWindow *window, int tries, void (^done)(void)) {
+    if (window.bounds.size.width > window.bounds.size.height || tries > 40) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)), dispatch_get_main_queue(), done);
+        return;
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        cxcWaitLandscape(window, tries + 1, done);
+    });
+}
+
+void CXCRotateToLandscape(UIWindow *window, void (^done)(void)) {
+    BOOL portrait = window.bounds.size.width < window.bounds.size.height;
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad || !portrait) {
+        done();
+        return;
+    }
+    if (@available(iOS 16.0, *)) {
+        cxcLandscapeForGame = YES;
+        [window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+        UIWindowSceneGeometryPreferencesIOS *landscape = [[UIWindowSceneGeometryPreferencesIOS alloc]
+            initWithInterfaceOrientations:UIInterfaceOrientationMaskLandscape];
+        [window.windowScene requestGeometryUpdateWithPreferences:landscape errorHandler:^(NSError *error) {
+            NSLog(@"[CXC] поворот перед игрой не вышел: %@", error);
+        }];
+        cxcWaitLandscape(window, 0, done);
+        return;
+    }
+    done();
+}
+
 UIViewController *CXCLauncherRoot(void) {
+    cxcLandscapeForGame = NO;
     LauncherNavigationController *nav = [[LauncherNavigationController alloc] initWithRootViewController:[CXCWebLauncherViewController new]];
     nav.navigationBarHidden = YES;
     nav.toolbarHidden = YES;

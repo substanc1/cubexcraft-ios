@@ -10,4 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 // Корень окна: LauncherNavigationController (его код запуска игры) без своих панелей, внутри — лаунчер
 UIViewController *CXCLauncherRoot(void);
 
+// Перед экраном игры: повернуть окно горизонтально и дождаться поворота (iPhone), затем done
+void CXCRotateToLandscape(UIWindow *window, void (^done)(void));
+
 NS_ASSUME_NONNULL_END

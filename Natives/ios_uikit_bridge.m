@@ -113,15 +113,20 @@ void UIKit_launchMinecraftSurfaceVC(UIWindow* window, NSDictionary* metadata) {
     //setPreference(@"internal_launch_on_boot", getPreference(@"restart_before_launch"));
     setPrefObject(@"internal.selected_account", BaseAuthenticator.current.authData[@"username"]);
     dispatch_async(dispatch_get_main_queue(), ^{
-        tmpRootVC = window.rootViewController;
-        [UIView animateWithDuration:0.2 animations:^{
-            window.alpha = 0;
-        } completion:^(BOOL b){
-            [window resignKeyWindow];
-            window.alpha = 1;
-            window.rootViewController = [[SurfaceViewController alloc] initWithMetadata:metadata];
-            [window makeKeyAndVisible];
-        }];
+        void (^launch)(void) = ^{
+            tmpRootVC = window.rootViewController;
+            [UIView animateWithDuration:0.2 animations:^{
+                window.alpha = 0;
+            } completion:^(BOOL b){
+                [window resignKeyWindow];
+                window.alpha = 1;
+                window.rootViewController = [[SurfaceViewController alloc] initWithMetadata:metadata];
+                [window makeKeyAndVisible];
+            }];
+        };
+        // CubeXCraft: лаунчер вертикальный — сначала поворот, потом экран игры. Иначе игра создаётся с размерами
+        // портрета и после поворота уезжает за край (24.10, iPhone 16 Pro)
+        CXCRotateToLandscape(window, launch);
     });
 }
 
