@@ -391,6 +391,11 @@ static NSString *mavenName(NSString *rel) {
     for (NSString *k in mc[@"exports"]) [jvm addObjectsFromArray:@[@"--add-exports", [NSString stringWithFormat:@"%@=%@", k, mc[@"exports"][k]]]];
     for (NSString *k in mc[@"opens"]) [jvm addObjectsFromArray:@[@"--add-opens", [NSString stringWithFormat:@"%@=%@", k, mc[@"opens"][k]]]];
     for (NSString *k in mc[@"reads"]) [jvm addObjectsFromArray:@[@"--add-reads", [NSString stringWithFormat:@"%@=%@", k, mc[@"reads"][k]]]];
+    // Сборщик мусора — короткие паузы: без настроек на подгрузке чанков игра подтормаживала (24.10, iPhone 16 Pro).
+    // -Xlog:gc — паузы в журнал, чтобы по логу игрока видеть, тормозит ли сборка мусора
+    [jvm addObjectsFromArray:@[@"-XX:+UnlockExperimentalVMOptions", @"-XX:+UseG1GC", @"-XX:MaxGCPauseMillis=37",
+        @"-XX:G1NewSizePercent=20", @"-XX:G1ReservePercent=20", @"-XX:G1HeapRegionSize=8M",
+        @"-XX:+ParallelRefProcEnabled", @"-XX:+DisableExplicitGC", @"-Xlog:gc"]];
 
     // Аргументы игры целиком: Amethyst заменяет (не сливает) arguments ванильной версии
     NSMutableArray *game = [@[

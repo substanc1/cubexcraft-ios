@@ -131,8 +131,9 @@
 
     // настройки игры трогаем только при смене качества — свои правки игрока в игре не затираются.
     // Метка — файлом рядом с options.txt (не в настройках Amethyst: те молча не сохраняют незнакомые ключи)
-    // «:2» — версия пресетов: при её смене пресет применяется заново (0.1.5: дальность 5 без права на память)
-    NSString *key = [[self keyFor:q] stringByAppendingString:@":2"];
+    // «:3» — версия пресетов: при её смене пресет применяется заново (0.1.5: дальность 5 без права на память;
+    // 0.1.7: «Максимум» — дальность 8 вместо 10, на подгрузке чанков подтормаживало)
+    NSString *key = [[self keyFor:q] stringByAppendingString:@":3"];
     NSString *optionsPath = [gameDir stringByAppendingPathComponent:@"options.txt"];
     NSString *markPath = [gameDir stringByAppendingPathComponent:@".cxc-quality"];
     NSString *applied = [NSString stringWithContentsOfFile:markPath encoding:NSUTF8StringEncoding error:nil];
@@ -143,7 +144,7 @@
     NSDictionary *preset;
     switch (q) {
         case CXCQualityMax:
-            preset = @{@"renderDistance": @"10", @"simulationDistance": @"6", @"graphicsMode": @"1", @"particles": @"0",
+            preset = @{@"renderDistance": @"8", @"simulationDistance": @"6", @"graphicsMode": @"1", @"particles": @"0",
                 @"maxFps": @"60", @"ao": @"true", @"entityShadows": @"true", @"biomeBlendRadius": @"2",
                 @"mipmapLevels": @"2", @"renderClouds": @"\"fast\"", @"entityDistanceScaling": @"1.0"};
             break;
@@ -160,6 +161,8 @@
     for (NSString *k in preset) {
         [self set:k value:preset[k] in:lines];
     }
+    // чанки строятся в фоне, кадр их не ждёт
+    [self set:@"prioritizeChunkUpdates" value:@"0" in:lines];
     if (!getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit")) {
         // без права на расширенную память (~3,3 ГБ на всё) — дальность 5: вдвое меньше чанков при входе в мир
         [self set:@"renderDistance" value:@"5" in:lines];
