@@ -72,7 +72,10 @@
             @"files_dir": @"CubeXCraft-mobile",
             @"quality": @"auto",
             @"applied_quality": @"",
-            @"auto_join": @YES
+            @"shaders": @"auto",
+            // был auto_join (вкл.); с 0.1.9 новый ключ, выключен — после запуска главное меню (просьба владельца 24.10);
+            // старый ключ Amethyst при загрузке отбрасывает как незнакомый
+            @"join_on_start": @NO
         }.mutableCopy
     }.mutableCopy;
 

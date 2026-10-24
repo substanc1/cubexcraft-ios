@@ -176,4 +176,53 @@
     }
 }
 
+#pragma mark - Шейдеры
+
++ (BOOL)autoShaders {
+    return self.effectiveQuality == CXCQualityMax;
+}
+
++ (BOOL)effectiveShaders {
+    NSString *s = getPrefObject(@"cubexcraft.shaders");
+    if ([s isEqual:@"on"]) return YES;
+    if ([s isEqual:@"off"]) return NO;
+    return self.autoShaders;
+}
+
+// iris.properties — key=value; пак — наш CubeXCraft_shaders (Complementary под GregTech) из сборки ПК
++ (void)applyShadersToGameDir:(NSString *)gameDir {
+    BOOL on = self.effectiveShaders;
+    NSString *key = on ? @"on" : @"off";
+    NSString *path = [gameDir stringByAppendingPathComponent:@"config/iris.properties"];
+    NSString *markPath = [gameDir stringByAppendingPathComponent:@".cxc-shaders"];
+    NSString *applied = [NSString stringWithContentsOfFile:markPath encoding:NSUTF8StringEncoding error:nil];
+    if ([applied isEqualToString:key] && [NSFileManager.defaultManager fileExistsAtPath:path]) {
+        return;
+    }
+    NSString *pack = nil;
+    for (NSString *name in [NSFileManager.defaultManager contentsOfDirectoryAtPath:[gameDir stringByAppendingPathComponent:@"shaderpacks"] error:nil]) {
+        if ([name hasPrefix:@"CubeXCraft_shaders"] && [name hasSuffix:@".zip"]) pack = name;
+    }
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil] ?: @"";
+    NSMutableArray<NSString *> *lines = [NSMutableArray new];
+    for (NSString *line in [text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]) {
+        if (line.length) [lines addObject:line];
+    }
+    NSMutableDictionary *values = [@{@"enableShaders": on ? @"true" : @"false", @"disableUpdateMessage": @"true"} mutableCopy];
+    if (pack) values[@"shaderPack"] = pack;
+    for (NSString *k in values) {
+        NSString *want = [NSString stringWithFormat:@"%@=%@", k, values[k]];
+        NSUInteger i = [lines indexOfObjectPassingTest:^BOOL(NSString *line, NSUInteger idx, BOOL *stop) {
+            return [line hasPrefix:[k stringByAppendingString:@"="]];
+        }];
+        if (i == NSNotFound) [lines addObject:want]; else lines[i] = want;
+    }
+    [NSFileManager.defaultManager createDirectoryAtPath:path.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
+    NSString *out = [[lines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
+    if ([out writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
+        [key writeToFile:markPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+        NSLog(@"[CXC] iris.properties: шейдеры %@ (%@)", on ? @"включены" : @"выключены", pack ?: @"пак не найден");
+    }
+}
+
 @end

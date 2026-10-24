@@ -336,7 +336,9 @@
 /* CubeXCraft */
 "preference.section.cubexcraft" = "CubeXCraft";
 "preference.title.quality" = "Graphics quality";
-"preference.detail.quality" = "Auto picks by device memory. Maximum — 8 GB+: full 32× textures, fancy graphics, render distance 10. Balanced — 6 GB: lite textures, distance 7. Light — 4 GB or less: lite textures, distance 5, 30 FPS.";
-"preference.title.auto_join" = "Join server on start";
-"preference.detail.auto_join" = "After loading, the game joins the CubeXTech server (play.cubexcraft.site).";
+"preference.detail.quality" = "Auto picks by device memory. Maximum — 8 GB+: full 32× textures, fancy graphics, render distance 8, shaders. Balanced — 6 GB: lite textures, distance 7. Light — 4 GB or less: lite textures, distance 5, 30 FPS.";
+"preference.title.shaders" = "Shaders";
+"preference.detail.shaders" = "Fancy lighting, shadows and water (Iris, our CubeXCraft pack). Auto turns them on only at Maximum quality. If the game crashes or lags with them, turn them off here.";
+"preference.title.join_on_start" = "Join server on start";
+"preference.detail.join_on_start" = "After loading, the game joins the CubeXTech server (play.cubexcraft.site). Off — the main menu opens.";
 "login.option.cubexcraft" = "CubeXCraft account";

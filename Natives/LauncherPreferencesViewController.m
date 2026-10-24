@@ -70,7 +70,19 @@
                   [CXCDevice titleFor:CXCQualityLight]
               ]
             },
-            @{@"key": @"auto_join",
+            @{@"key": @"shaders",
+              @"hasDetail": @YES,
+              @"icon": @"sun.max",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[@"auto", @"on", @"off"],
+              @"pickList": @[
+                  [NSString stringWithFormat:@"Авто (%@)", CXCDevice.autoShaders ? @"включены" : @"выключены"],
+                  @"Включены",
+                  @"Выключены"
+              ]
+            },
+            @{@"key": @"join_on_start",
               @"hasDetail": @YES,
               @"icon": @"arrow.right.circle",
               @"type": self.typeSwitch,

@@ -121,6 +121,7 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
 
     [CXCInstaller ensureLauncherProfile];
     [CXCDevice applyQualityToGameDir:gameDir];
+    [CXCDevice applyShadersToGameDir:gameDir];
     [self status:@"Сборка готова"];
     return nil;
 }
@@ -176,12 +177,16 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
 // Sodium и наш экран его настроек — из сборки ПК (24.10, проба по слову владельца). Без Sodium чанки строит обычный
 // путь Minecraft, и на подгрузке мира игра дёргалась (сборка мусора ни при чём: паузы 11 мс в среднем).
 // Проверки Sodium проходят: LWJGL 3.3.3, переменных PojavLauncher (POJAV_RENDERER) у Amethyst нет.
+// Sodium дал 120 кадров (24.10) — следом Iris и наш шейдер-пак (включение — CXCDevice applyShadersToGameDir).
+// commons-collections4 в classpath ломает Iris (DEVLOG 12.10) — в мобильном профиле его нет.
 - (NSArray<NSString *> *)planDesktopMods:(NSDictionary *)libManifest gameDir:(NSString *)gameDir jobs:(NSMutableArray *)jobs {
     NSMutableArray *kept = [NSMutableArray new];
     NSDictionary *files = libManifest[@"files"];
     for (NSString *path in files) {
         NSString *name = path.lastPathComponent;
-        if (![path hasPrefix:@"mods/"] || !([name hasPrefix:@"sodium-neoforge-"] || [name hasPrefix:@"cubexcraft-sodiumui-"])) continue;
+        BOOL mod = [path hasPrefix:@"mods/"] && ([name hasPrefix:@"sodium-neoforge-"] || [name hasPrefix:@"cubexcraft-sodiumui-"]
+            || [name hasPrefix:@"iris-neoforge-"]);
+        if (!mod && ![path hasPrefix:@"shaderpacks/"]) continue;
         [kept addObject:path];
         NSArray *meta = files[path];
         NSString *dest = [gameDir stringByAppendingPathComponent:path];
@@ -189,7 +194,7 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
         [jobs addObject:@{@"url": [libManifest[@"base"] stringByAppendingString:[self urlEncodePath:path]], @"dest": dest,
             @"size": meta[0], @"sha1": meta[1]}];
     }
-    NSLog(@"[CXC] моды с ПК: %@", [kept componentsJoinedByString:@", "]);
+    NSLog(@"[CXC] с ПК: %@", [kept componentsJoinedByString:@", "]);
     return kept;
 }
 
@@ -435,7 +440,7 @@ static NSString *mavenName(NSString *rel) {
         [game addObject:client[i]];
     }
     NSDictionary *server = [profile[@"servers"] firstObject];
-    if (server && getPrefBool(@"cubexcraft.auto_join")) {
+    if (server && getPrefBool(@"cubexcraft.join_on_start")) {
         [game addObjectsFromArray:@[@"--quickPlayMultiplayer",
             [NSString stringWithFormat:@"%@:%@", server[@"serverAddress"], server[@"serverPort"]]]];
     }

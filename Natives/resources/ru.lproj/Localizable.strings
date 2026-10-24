@@ -249,7 +249,9 @@
 /* CubeXCraft */
 "preference.section.cubexcraft" = "CubeXCraft";
 "preference.title.quality" = "Качество графики";
-"preference.detail.quality" = "«Авто» подбирает по памяти телефона. Максимум — 8 ГБ и больше: полные текстуры 32×, красивая графика, дальность 10. Сбалансировано — 6 ГБ: лёгкие текстуры, дальность 7. Лёгкий — 4 ГБ и меньше: лёгкие текстуры, дальность 5, 30 FPS.";
-"preference.title.auto_join" = "Сразу на сервер";
-"preference.detail.auto_join" = "После загрузки игра сама заходит на сервер CubeXTech (play.cubexcraft.site).";
+"preference.detail.quality" = "«Авто» подбирает по памяти телефона. Максимум — 8 ГБ и больше: полные текстуры 32×, красивая графика, дальность 8, шейдеры. Сбалансировано — 6 ГБ: лёгкие текстуры, дальность 7. Лёгкий — 4 ГБ и меньше: лёгкие текстуры, дальность 5, 30 FPS.";
+"preference.title.shaders" = "Шейдеры";
+"preference.detail.shaders" = "Красивый свет, тени и вода (Iris, наш набор CubeXCraft). «Авто» включает их только на качестве «Максимум». Если игра с ними вылетает или тормозит — выключите здесь.";
+"preference.title.join_on_start" = "Сразу на сервер";
+"preference.detail.join_on_start" = "После загрузки игра сама заходит на сервер CubeXTech (play.cubexcraft.site). Выключено — открывается главное меню.";
 "login.option.cubexcraft" = "Аккаунт CubeXCraft";
