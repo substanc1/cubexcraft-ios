@@ -80,6 +80,10 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
 
     NSString *gameDir = CXCInstaller.gameDirPath;
     [NSFileManager.defaultManager createDirectoryAtPath:gameDir withIntermediateDirectories:YES attributes:nil error:nil];
+    // log4j игры пишет в logs/ относительно рабочей папки (GAME_DIR) — без папки latest.log не создаётся
+    for (NSString *dir in @[[gameDir stringByAppendingPathComponent:@"logs"], [@(getenv("GAME_DIR")) stringByAppendingPathComponent:@"logs"]]) {
+        [NSFileManager.defaultManager createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+    }
     _hashCachePath = [gameDir stringByAppendingPathComponent:@".cxc-hashes.json"];
     _hashCache = parseJSONFromFile(_hashCachePath);
     if (_hashCache[@"NSErrorObject"]) {
@@ -242,6 +246,22 @@ static NSString *mavenName(NSString *rel) {
         NSString *dest = [libRoot stringByAppendingPathComponent:rel];
         if (![[self sha1Of:dest] isEqualToString:meta[1]]) {
             [jobs addObject:@{@"url": url, @"dest": dest, @"size": meta[0], @"sha1": meta[1]}];
+        }
+    }
+
+    // Сама игра — не в classPath: FML находит пропатченные jar Minecraft и NeoForge (client-…-srg/-extra,
+    // neoforge-…-client/-universal) по -DlibraryDirectory. Без них «minecraft/neoforge [MISSING]» (24.10, первый запуск).
+    NSDictionary *libFiles = libManifest[@"files"];
+    for (NSString *path in libFiles) {
+        if (![path hasPrefix:@"libraries/net/minecraft/"] && ![path hasPrefix:@"libraries/net/neoforged/neoforge/"]) continue;
+        if ([path hasSuffix:@".cache"] || [path hasSuffix:@"/minecraft.jar"]) continue;
+        NSString *rel = [path substringFromIndex:10];
+        if ([paths containsObject:path]) continue;
+        NSArray *meta = libFiles[path];
+        NSString *dest = [libRoot stringByAppendingPathComponent:rel];
+        if (![[self sha1Of:dest] isEqualToString:meta[1]]) {
+            [jobs addObject:@{@"url": [libManifest[@"base"] stringByAppendingString:[self urlEncodePath:path]],
+                @"dest": dest, @"size": meta[0], @"sha1": meta[1]}];
         }
     }
     return nil;
