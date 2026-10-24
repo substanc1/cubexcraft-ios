@@ -105,6 +105,10 @@ void CXCPrepareTouchControls(UIWindow *window) {
     [buttons addObject:cxcButton(label(@"Выброс", @"Drop"), GLFW_KEY_Q, pct(20), rowH,
         fromRight(pct(31)), fromBottom(pct(33)), YES, NO)];
 
+    // СКМ — взять блок под прицелом (владелец 25.10; у дизайнера кнопки нет): в ряд перед «Выброс», шаг 1,5 % H
+    [buttons addObject:cxcButton(label(@"Взять", @"Pick"), SPECIALBTN_MOUSEMID, pct(20), rowH,
+        fromRight(pct(52.5)), fromBottom(pct(33)), YES, NO)];
+
     // сверху по центру: «Скрыть» сворачивает кнопки, кроме ходьбы (у дизайнера — «Меню», владелец 25.10: «не пойму,
     // что делает кнопка меню», «скрытие, которое не убирает возможность ходить»); за ней группа, шаг 1,5 % H
     NSArray *group = @[

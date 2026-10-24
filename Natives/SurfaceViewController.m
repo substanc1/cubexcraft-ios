@@ -169,6 +169,17 @@ static GameSurfaceView* pojavWindow;
     self.longPressTwoGesture.delegate = self;
     [self.touchView addGestureRecognizer:self.longPressTwoGesture];
 
+    // CubeXCraft: тап двумя пальцами — средняя кнопка мыши (в инвентаре — там, где тапнули: AE2 «заказать крафт»;
+    // в игре — взять блок под прицелом)
+    UITapGestureRecognizer *middleTapGesture = [[UITapGestureRecognizer alloc]
+        initWithTarget:self action:@selector(cxcSurfaceOnTwoFingerTap:)];
+    middleTapGesture.allowedTouchTypes = @[@(UITouchTypeDirect)];
+    middleTapGesture.delegate = self;
+    middleTapGesture.numberOfTapsRequired = 1;
+    middleTapGesture.numberOfTouchesRequired = 2;
+    middleTapGesture.cancelsTouchesInView = NO;
+    [self.touchView addGestureRecognizer:middleTapGesture];
+
     self.scrollPanGesture = [[UIPanGestureRecognizer alloc]
         initWithTarget:self action:@selector(surfaceOnTouchesScroll:)];
     self.scrollPanGesture.allowedTouchTypes = @[@(UITouchTypeDirect)];
@@ -734,6 +745,21 @@ static GameSurfaceView* pojavWindow;
             CallbackBridge_nativeSendKey(currentHotbarSlot, 0, 0, 0);
         }
     }
+}
+
+- (void)cxcSurfaceOnTwoFingerTap:(UITapGestureRecognizer *)sender {
+    if (sender.state != UIGestureRecognizerStateRecognized) return;
+    if (self.shouldTriggerHaptic) {
+        [self.lightHaptic impactOccurred];
+    }
+    if (!isGrabbing) {
+        // курсор — в середину между пальцами, потом клик
+        [self sendTouchPoint:[sender locationInView:self.rootView] withEvent:ACTION_MOVE];
+    }
+    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_MIDDLE, 1, 0);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 33 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_MIDDLE, 0, 0);
+    });
 }
 
 - (void)surfaceOnDoubleClick:(UITapGestureRecognizer *)sender {
