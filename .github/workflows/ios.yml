@@ -1,0 +1,39 @@
+# Сборка CubeXCraft для iPhone/iPad на облачном Mac GitHub (windows-claude, SCRUM-362).
+# Выход — .ipa без подписи: ставится через Sideloadly/AltStore своим Apple ID (подпись на 7 дней).
+name: iOS build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Инструменты
+        run: |
+          brew install ldid make
+          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '8'
+
+      - name: Сборка
+        run: |
+          xcodebuild -version
+          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 SLIMMED=1 BOOTJDK="$JAVA_HOME/bin"
+          ls -la artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cubexcraft-ios-ipa
+          path: artifacts/*.ipa
+          if-no-files-found: error
