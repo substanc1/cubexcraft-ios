@@ -159,6 +159,11 @@
     for (NSString *k in preset) {
         [self set:k value:preset[k] in:lines];
     }
+    if (!getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit")) {
+        // без права на расширенную память (~3,3 ГБ на всё) — дальность 5: вдвое меньше чанков при входе в мир
+        [self set:@"renderDistance" value:@"5" in:lines];
+        [self set:@"simulationDistance" value:@"5" in:lines];
+    }
     [self setLitePack:(q != CXCQualityMax) in:lines];
     NSString *text = [[lines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
     if ([text writeToFile:optionsPath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {

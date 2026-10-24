@@ -3,6 +3,7 @@
 #import "CXCApi.h"
 #import "CXCDevice.h"
 #import "../PLProfiles.h"
+#import "../authenticator/BaseAuthenticator.h"
 #import "../LauncherPreferences.h"
 #import "../utils.h"
 
@@ -110,6 +111,7 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
     [self ensureProperty:@"mixin.feature.suppress_narrator_stacktrace" value:@"false"
         inFile:@"config/modernfix-mixins.properties" gameDir:gameDir manifest:manifest];
     saveJSONToFile(_hashCache, _hashCachePath);
+    [self skipIntroIfLowMemory:gameDir];
 
     // 3. Описание версии для Amethyst
     error = [self writeVersionJson:profile libraries:libraries];
@@ -184,6 +186,25 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
                 [fm removeItemAtPath:[root stringByAppendingPathComponent:rel] error:nil];
             }
         }
+    }
+}
+
+// Заставка CubeXCraft Intro: без права increased-memory-limit её первый показ совпадает с пиком памяти при входе в мир
+// (рецепты GTCEu, чанки) — iOS выгружает игру, ролик не досмотрен, и так при каждом входе (24.10, iPhone 16 Pro, 3,3 ГБ).
+// На таких телефонах ставим метку «просмотрено» в формате мода: «ник:номер сброса» из resets.json (решение владельца).
+- (void)skipIntroIfLowMemory:(NSString *)gameDir {
+    if (getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit")) return;
+    NSString *user = BaseAuthenticator.current.authData[@"username"];
+    if (user.length == 0) return;
+    NSDictionary *resets = parseJSONFromFile([gameDir stringByAppendingPathComponent:@"config/cubexcraft-intro/resets.json"]);
+    int reset = resets[@"NSErrorObject"] ? 0 : [resets[user] intValue];
+    NSString *mark = [NSString stringWithFormat:@"%@:%d", user, reset];
+    NSString *path = [gameDir stringByAppendingPathComponent:@".cubexcraft-intro-seen"];
+    NSString *current = [[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil]
+        stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (![current isEqualToString:mark]) {
+        [mark writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+        NSLog(@"[CXC] заставка пропущена (нет права на расширенную память): %@", mark);
     }
 }
 
