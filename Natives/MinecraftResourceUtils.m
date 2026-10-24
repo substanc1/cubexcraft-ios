@@ -85,7 +85,9 @@
             // we have libjnidispatch 5.13.0 in Frameworks directory
             uint32_t bundledVer = 5 << 16 | 13 << 8 | 0;
             uint32_t requiredVer = (char)version[0].intValue << 16 | (char)version[1].intValue << 8 | (char)version[2].intValue;
-            if (requiredVer > bundledVer) {
+            // CubeXCraft: и для 5.14+ (NeoForge 1.21.1) — своя JNA из jar на iOS не грузится (dlopen временного файла
+            // запрещён), а 5.13 с libjnidispatch из Frameworks совместима по API
+            if (requiredVer > bundledVer && version[0].intValue != 5) {
                 NSLog(@"[MCDL] Warning: JNA version required by %@ is %@ > 5.13.0, skipping JNA replacement.", json[@"id"], versionStr);
                 continue;
             }

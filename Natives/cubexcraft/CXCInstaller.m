@@ -105,6 +105,11 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
     if (self.cancelled) return @"Отменено";
 
     [self removeExtras:manifest profile:profile gameDir:gameDir];
+    // ModernFix: патч на рассказчик ищет com.mojang.text2speech.OperatingSystem, а у Amethyst своя заглушка
+    // text2speech без него → MixinTransformerError при создании окна (24.10, iPhone 16 Pro)
+    [self ensureProperty:@"mixin.feature.suppress_narrator_stacktrace" value:@"false"
+        inFile:@"config/modernfix-mixins.properties" gameDir:gameDir manifest:manifest];
+    saveJSONToFile(_hashCache, _hashCachePath);
 
     // 3. Описание версии для Amethyst
     error = [self writeVersionJson:profile libraries:libraries];
@@ -180,6 +185,41 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
             }
         }
     }
+}
+
+// key=value в .properties сборки; файл дальше считается серверным (по кэшу хэшей), чтобы не перекачивать каждый раз
+- (void)ensureProperty:(NSString *)key value:(NSString *)value inFile:(NSString *)rel gameDir:(NSString *)gameDir manifest:(NSDictionary *)manifest {
+    NSString *dest = [gameDir stringByAppendingPathComponent:rel];
+    NSString *text = [NSString stringWithContentsOfFile:dest encoding:NSUTF8StringEncoding error:nil] ?: @"";
+    NSString *want = [NSString stringWithFormat:@"%@=%@", key, value];
+    NSString *prefix = [key stringByAppendingString:@"="];
+    NSMutableArray *lines = [NSMutableArray new];
+    BOOL found = NO, changed = NO;
+    for (NSString *line in [text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]) {
+        if ([line hasPrefix:prefix]) {
+            found = YES;
+            changed |= ![line isEqualToString:want];
+            [lines addObject:want];
+        } else if (line.length) {
+            [lines addObject:line];
+        }
+    }
+    if (!found) {
+        [lines addObject:want];
+        changed = YES;
+    }
+    if (!changed) return;
+    [NSFileManager.defaultManager createDirectoryAtPath:dest.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
+    [[[lines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"] writeToFile:dest atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    NSArray *meta = manifest[@"files"][rel];
+    NSDictionary *attrs = [NSFileManager.defaultManager attributesOfItemAtPath:dest error:nil];
+    if (meta && attrs) {
+        NSString *stamp = [NSString stringWithFormat:@"%llu:%.0f", attrs.fileSize, attrs.fileModificationDate.timeIntervalSince1970];
+        @synchronized (self) {
+            _hashCache[dest] = @{@"stamp": stamp, @"sha1": meta[1]};
+        }
+    }
+    NSLog(@"[CXC] %@: %@", rel, want);
 }
 
 #pragma mark - Библиотеки и описание версии
