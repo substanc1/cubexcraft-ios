@@ -81,12 +81,14 @@ void CXCPrepareTouchControls(UIWindow *window) {
     b[@"bgColor"] = @(CXC_RED_35);
     b[@"strokeWidth"] = @2;
     b[@"cornerRadius"] = @100;
+    b[@"cxcKeepWhenCollapsed"] = @YES;
     [buttons addObject:b];
 
     CGFloat crouch = pct(19);
     b = cxcButton(label(@"Присесть", @"Sneak"), GLFW_KEY_LEFT_SHIFT, crouch, crouch,
         fromRight(pct(31)), fromBottom(pct(5)), YES, NO);
     b[@"cornerRadius"] = @100;
+    b[@"cxcKeepWhenCollapsed"] = @YES;
     [buttons addObject:b];
 
     CGFloat rowH = pct(13.4);
@@ -97,14 +99,16 @@ void CXCPrepareTouchControls(UIWindow *window) {
     b[@"strokeColor"] = @(CXC_YELLOW);
     b[@"textColor"] = @(CXC_YELLOW);
     b[@"toggleColor"] = @(CXC_YELLOW_35);
+    b[@"cxcKeepWhenCollapsed"] = @YES;
     [buttons addObject:b];
 
     [buttons addObject:cxcButton(label(@"Выброс", @"Drop"), GLFW_KEY_Q, pct(20), rowH,
         fromRight(pct(31)), fromBottom(pct(33)), YES, NO)];
 
-    // сверху по центру: «Меню» сворачивает всё управление, за ним группа; шаг 1,5 % H
+    // сверху по центру: «Скрыть» сворачивает кнопки, кроме ходьбы (у дизайнера — «Меню», владелец 25.10: «не пойму,
+    // что делает кнопка меню», «скрытие, которое не убирает возможность ходить»); за ней группа, шаг 1,5 % H
     NSArray *group = @[
-        @[label(@"Меню", @"Menu"), @(SPECIALBTN_TOGGLECTRL)],
+        @[label(@"Скрыть", @"Hide"), @(SPECIALBTN_TOGGLECTRL)],
         @[label(@"Чат", @"Chat"), @(GLFW_KEY_T)],
         @[label(@"Инвентарь", @"Inventory"), @(GLFW_KEY_E)],
         @[label(@"Игроки", @"Players"), @(GLFW_KEY_TAB)],
@@ -116,6 +120,9 @@ void CXCPrepareTouchControls(UIWindow *window) {
     for (NSUInteger i = 0; i < group.count; i++) {
         NSString *x = [NSString stringWithFormat:@"(${screen_width} - %@) / 2 + %@", cxcPx(total), cxcPx(i * (groupW + gap))];
         b = cxcButton(group[i][0], [group[i][1] intValue], groupW, rowH, x, cxcPx(pct(3)), YES, i == 0);
+        if (i == 0) {
+            b[@"cxcAltName"] = label(@"Показать", @"Show");
+        }
         if ([group[i][1] intValue] == GLFW_KEY_TAB) {
             b[@"isToggle"] = @YES;
             b[@"toggleColor"] = @(CXC_RED_35);
@@ -134,6 +141,7 @@ void CXCPrepareTouchControls(UIWindow *window) {
     joystick[@"thumbColor"] = @(CXC_RED_35);
     joystick[@"absolute"] = @NO;
     joystick[@"forwardLock"] = @NO;
+    joystick[@"cxcKeepWhenCollapsed"] = @YES;
 
     NSDictionary *layout = @{
         @"version": @8,
@@ -142,6 +150,9 @@ void CXCPrepareTouchControls(UIWindow *window) {
         @"mDrawerDataList": @[],
         @"mJoystickDataList": @[joystick]
     };
+    // удержание пальца для ЛКМ (ломать, бить): 0,3 с вместо 0,4; тап дольше 0,25 с ПКМ уже не считается
+    setPrefObject(@"control.press_duration", @300);
+
     NSString *path = [NSString stringWithFormat:@"%s/controlmap/cubexcraft.json", getenv("AME_HOME")];
     NSData *json = [NSJSONSerialization dataWithJSONObject:layout options:NSJSONWritingPrettyPrinted error:nil];
     if ([json writeToFile:path atomically:YES]) {

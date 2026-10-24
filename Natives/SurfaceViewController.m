@@ -55,6 +55,8 @@ static GameSurfaceView* pojavWindow;
     shouldTriggerClick, shouldTriggerHaptic, slideableHotbar, toggleHidden;
 
 @property(nonatomic) BOOL enableMouseGestures, enableHotbarGestures;
+// CubeXCraft: когда коснулись экрана — тап (ПКМ) только короткий, удержание — только ЛКМ
+@property(nonatomic) CFTimeInterval cxcTouchDownTime;
 
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
@@ -405,7 +407,9 @@ static GameSurfaceView* pojavWindow;
     for (UIView *view in self.ctrlView.subviews) {
         ControlButton *button = (ControlButton *)view;
         if (!button.canBeHidden) continue;
-        BOOL hidden = hide || !(
+        // CubeXCraft: свёрнутое управление оставляет ходьбу (джойстик, прыжок, присесть, бег)
+        BOOL keep = [button.properties[@"cxcKeepWhenCollapsed"] boolValue];
+        BOOL hidden = (hide && !keep) || !(
             (isGrabbing && [button.properties[@"displayInGame"] boolValue]) ||
             (!isGrabbing && [button.properties[@"displayInMenu"] boolValue]));
         if (!hidden && ![button isKindOfClass:ControlSubButton.class]) {
@@ -584,6 +588,7 @@ static GameSurfaceView* pojavWindow;
             case ACTION_DOWN:
                 self.clickRange = CGRectMake(locationInView.x - 2, locationInView.y - 2, 5, 5);
                 self.shouldTriggerClick = YES;
+                self.cxcTouchDownTime = CACurrentMediaTime();
                 break;
 
             case ACTION_MOVE:
@@ -715,6 +720,9 @@ static GameSurfaceView* pojavWindow;
     if (sender.state == UIGestureRecognizerStateRecognized) {
         if (currentHotbarSlot == -1) {
             if (!self.enableMouseGestures) return;
+            // CubeXCraft: UITapGestureRecognizer срабатывает и после долгого удержания — палец держали дольше
+            // 0,25 с, значит это ЛКМ (ломать), а не ПКМ: иначе на машинах и сундуках вместо удара открывалось окно
+            if (isGrabbing && CACurrentMediaTime() - self.cxcTouchDownTime > 0.25) return;
             CallbackBridge_nativeSendMouseButton(isGrabbing == JNI_TRUE ?
                 GLFW_MOUSE_BUTTON_RIGHT : GLFW_MOUSE_BUTTON_LEFT, 1, 0);
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 33 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
@@ -870,6 +878,13 @@ static GameSurfaceView* pojavWindow;
 
                 case SPECIALBTN_TOGGLECTRL:
                     [self executebtn_special_togglebtn:held];
+                    // CubeXCraft: подпись по состоянию — «Скрыть» / «Показать»
+                    if (!held && sender.properties[@"cxcAltName"]) {
+                        NSString *name = sender.properties[@"name"];
+                        sender.properties[@"name"] = sender.properties[@"cxcAltName"];
+                        sender.properties[@"cxcAltName"] = name;
+                        [sender update];
+                    }
                     break;
 
                 case SPECIALBTN_SCROLLDOWN:
