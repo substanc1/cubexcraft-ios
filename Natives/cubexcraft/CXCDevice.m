@@ -131,7 +131,8 @@
 
     // настройки игры трогаем только при смене качества — свои правки игрока в игре не затираются.
     // Метка — файлом рядом с options.txt (не в настройках Amethyst: те молча не сохраняют незнакомые ключи)
-    NSString *key = [self keyFor:q];
+    // «:2» — версия пресетов: при её смене пресет применяется заново (0.1.5: дальность 5 без права на память)
+    NSString *key = [[self keyFor:q] stringByAppendingString:@":2"];
     NSString *optionsPath = [gameDir stringByAppendingPathComponent:@"options.txt"];
     NSString *markPath = [gameDir stringByAppendingPathComponent:@".cxc-quality"];
     NSString *applied = [NSString stringWithContentsOfFile:markPath encoding:NSUTF8StringEncoding error:nil];
