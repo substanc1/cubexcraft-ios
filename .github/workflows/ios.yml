@@ -16,6 +16,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Xcode — самый новый на раннере (Amethyst использует API iOS 26 SDK)
+        run: |
+          ls -d /Applications/Xcode*.app
+          X=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
       - name: Инструменты
         run: |
           brew install ldid make
