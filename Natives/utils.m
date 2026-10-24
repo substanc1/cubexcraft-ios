@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/mman.h>
 
 #include "utils.h"
 
@@ -191,6 +192,44 @@ void JIT26PrepareRegionForPatching(void *addr, size_t size) {
 void JIT26SendJITScript(NSString* script) {
     NSCAssert(script, @"Script must not be nil");
     BreakSendJITScript((char*)script.UTF8String, script.length);
+}
+
+// CubeXCraft: регион кода JVM — ниже 64 ГБ. К запуску игры низкие адреса бывают забиты (WebView, загрузки), и отладчик
+// выделял регион на 0x7e…, где StikDebug готовит страницы мимо. Держим участок с запуска приложения, отпускаем его
+// и сразу просим регион у скрипта (команда 5) — он ложится в освобождённое место; JVM получает его на brk 0x69
+#define CXC_JIT_ADDR_LIMIT 0x1000000000ULL
+#define CXC_JIT_RESERVE (320UL << 20)
+static void *cxcJITReserve, *cxcJITReserveLog;
+
+void CXCReserveLowJITRange(void) {
+    void *p = mmap(NULL, CXC_JIT_RESERVE, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if (p == MAP_FAILED) return;
+    cxcJITReserveLog = p;
+    if ((uint64_t)p + CXC_JIT_RESERVE > CXC_JIT_ADDR_LIMIT) {
+        munmap(p, CXC_JIT_RESERVE);
+        return;
+    }
+    cxcJITReserve = p;
+}
+
+__attribute__((noinline,optnone,naked))
+void* CXCBreakAllocJITRegion(void *unused, size_t len) {
+   asm("mov x16, #5 
+"
+       "brk #0xf00d 
+"
+       "ret");
+}
+
+void* CXCPrepareJITRegion(size_t len) {
+    if (cxcJITReserve) {
+        munmap(cxcJITReserve, CXC_JIT_RESERVE);
+        cxcJITReserve = NULL;
+    }
+    void *region = CXCBreakAllocJITRegion(NULL, len);
+    NSLog(@"[CXC] JIT: резерв %p, регион %p (%zu МБ)%@", cxcJITReserveLog, region, len >> 20,
+        (uint64_t)region + len > CXC_JIT_ADDR_LIMIT ? @" — выше 64 ГБ, страницы готовит скрипт по одной" : @"");
+    return region;
 }
 
 BOOL JIT26IsLikelyDebuggerKeepAttached(void) {

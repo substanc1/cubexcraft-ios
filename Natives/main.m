@@ -292,6 +292,8 @@ int main(int argc, char *argv[]) {
         return ret;
     }
 
+    // CubeXCraft: низкий участок адресов под регион JIT, пока его не заняли (см. CXCPrepareJITRegion)
+    CXCReserveLowJITRange();
     setenv("BUNDLE_PATH", dirname(argv[0]), 1);
     isJailbroken = init_checkForJailbreak();
     init_setupHomeDirectory();

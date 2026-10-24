@@ -67,6 +67,10 @@ void JIT26PrepareRegionForPatching(void *addr, size_t len);
 void JIT26SetDetachAfterFirstBr(BOOL value);
 void JIT26SendJITScript(NSString* script);
 BOOL JIT26IsLikelyDebuggerKeepAttached(void);
+// CubeXCraft: StikDebug готовит JIT-страницы только по адресам ниже 64 ГБ (пишет адрес 9 hex-цифрами), регион кода
+// JVM выше даёт SIGBUS на старте (24.10, 0.2.2). Низкий участок держим с запуска приложения и отдаём под регион
+void CXCReserveLowJITRange(void);
+void* CXCPrepareJITRegion(size_t len);
 
 // Device JIT flags
 typedef enum {
