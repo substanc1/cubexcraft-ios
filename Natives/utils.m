@@ -214,10 +214,8 @@ void CXCReserveLowJITRange(void) {
 
 __attribute__((noinline,optnone,naked))
 void* CXCBreakAllocJITRegion(void *unused, size_t len) {
-   asm("mov x16, #5 
-"
-       "brk #0xf00d 
-"
+   asm("mov x16, #5 \n"
+       "brk #0xf00d \n"
        "ret");
 }
 
