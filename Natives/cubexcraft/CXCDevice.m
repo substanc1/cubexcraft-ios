@@ -1,4 +1,7 @@
 #import <CFNetwork/CFNetwork.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <sys/socket.h>
 #import <os/proc.h>
 #import <UIKit/UIKit.h>
 #import "CXCDevice.h"
@@ -33,8 +36,35 @@
     return [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:@"stikjit://"]];
 }
 
-// туннельные интерфейсы в настройках прокси системы — приблизительно, поэтому игрок всегда может продолжить
++ (void)openHelper:(NSString *)app {
+    NSString *url;
+    if ([app isEqual:@"stik"]) {
+        url = self.stikDebugInstalled ? @"stikjit://" : @"itms-apps://apps.apple.com/app/id6744045754";
+    } else {
+        // localdevvpn://enable?scheme=… — LocalDevVPN включает туннель и через секунду открывает нашу схему
+        url = self.localDevVPNInstalled ? @"localdevvpn://enable?scheme=cubexcraft" : @"itms-apps://apps.apple.com/app/id6755608044";
+    }
+    [UIApplication.sharedApplication openURL:[NSURL URLWithString:url] options:@{} completionHandler:nil];
+}
+
++ (BOOL)localDevVPNInstalled {
+    return [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:@"localdevvpn://"]];
+}
+
+// Туннель VPN поднят: интерфейс utun с адресом IPv4 (у LocalDevVPN — 10.7.1.1, маршрут только до 10.7.0.1,
+// поэтому в настройках прокси системы его нет — по ним 24.10 включённый LocalDevVPN не находился).
+// Запасной путь — настройки прокси (обычные VPN). Проверка приблизительная: игрок всегда может продолжить.
 + (BOOL)vpnActive {
+    struct ifaddrs *list = NULL;
+    BOOL found = NO;
+    if (getifaddrs(&list) == 0) {
+        for (struct ifaddrs *a = list; a && !found; a = a->ifa_next) {
+            if (!a->ifa_addr || a->ifa_addr->sa_family != AF_INET || !(a->ifa_flags & IFF_UP)) continue;
+            found = !strncmp(a->ifa_name, "utun", 4) || !strncmp(a->ifa_name, "ipsec", 5) || !strncmp(a->ifa_name, "ppp", 3);
+        }
+        freeifaddrs(list);
+    }
+    if (found) return YES;
     NSDictionary *settings = CFBridgingRelease(CFNetworkCopySystemProxySettings());
     for (NSString *name in [settings[@"__SCOPED__"] allKeys]) {
         if ([name hasPrefix:@"utun"] || [name hasPrefix:@"ipsec"] || [name hasPrefix:@"ppp"] || [name hasPrefix:@"tun"]) {

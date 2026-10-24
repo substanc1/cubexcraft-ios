@@ -11,9 +11,6 @@
 #import "../LauncherPreferencesViewController.h"
 #import "../utils.h"
 
-static NSString *const kStoreStikDebug = @"itms-apps://apps.apple.com/app/id6744045754";
-static NSString *const kStoreLocalDevVPN = @"itms-apps://apps.apple.com/app/id6755608044";
-
 typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
 
 @interface CXCWebLauncherViewController () <WKScriptMessageHandlerWithReply>
@@ -45,6 +42,16 @@ typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
     self.view = self.web;
     NSURL *index = [NSBundle.mainBundle URLForResource:@"index" withExtension:@"html" subdirectory:@"cxc-ui"];
     [self.web loadFileURL:index allowingReadAccessToURL:index.URLByDeletingLastPathComponent];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // вернулись из StikDebug / LocalDevVPN / App Store — страница перепроверяет помощников JIT
+    __weak typeof(self) weakSelf = self;
+    [NSNotificationCenter.defaultCenter addObserverForName:UIApplicationDidBecomeActiveNotification object:nil
+        queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+        [weakSelf emit:@"active" data:weakSelf.jitInfo];
+    }];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -102,11 +109,11 @@ typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
     else if ([cmd isEqual:@"logout"]) [self cmdLogout:reply];
     else if ([cmd isEqual:@"play"]) [self cmdPlay:m reply:reply];
     else if ([cmd isEqual:@"cancelPlay"]) [self cmdCancelPlay:reply];
-    else if ([cmd isEqual:@"jitCheck"]) reply(@{@"stik": @(CXCDevice.stikDebugInstalled), @"vpn": @(CXCDevice.vpnActive)}, nil);
+    else if ([cmd isEqual:@"jitCheck"]) reply(self.jitInfo, nil);
     else if ([cmd isEqual:@"jitRetry"]) { [self.nav cxcRetryJIT]; reply(@{}, nil); }
     else if ([cmd isEqual:@"setSetting"]) [self cmdSetSetting:m reply:reply];
     else if ([cmd isEqual:@"openURL"]) { [self open:m[@"url"]]; reply(@{}, nil); }
-    else if ([cmd isEqual:@"openStore"]) { [self open:[m[@"app"] isEqual:@"stik"] ? kStoreStikDebug : kStoreLocalDevVPN]; reply(@{}, nil); }
+    else if ([cmd isEqual:@"openStore"]) { [CXCDevice openHelper:[m[@"app"] isEqual:@"stik"] ? @"stik" : @"vpn"]; reply(@{}, nil); }
     else if ([cmd isEqual:@"share"]) [self cmdShare:m reply:reply];
     else if ([cmd isEqual:@"openAdvanced"]) [self cmdOpenAdvanced:reply];
     else reply(nil, [@"unknown command: " stringByAppendingString:cmd ?: @"?"]);
@@ -118,6 +125,11 @@ typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
 }
 
 #pragma mark - Команды
+
+// помощники JIT: StikDebug стоит, туннель поднят, LocalDevVPN стоит
+- (NSDictionary *)jitInfo {
+    return @{@"stik": @(CXCDevice.stikDebugInstalled), @"vpn": @(CXCDevice.vpnActive), @"vpnApp": @(CXCDevice.localDevVPNInstalled)};
+}
 
 - (NSDictionary *)settingsInfo {
     return @{
@@ -141,7 +153,7 @@ typedef void (^CXCReply)(id _Nullable reply, NSString * _Nullable error);
         @"version": NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"",
         @"memTotalGB": @(round(NSProcessInfo.processInfo.physicalMemory / 1073741824.0)),
         @"memAvailGB": @(os_proc_available_memory() / 1073741824.0),
-        @"jit": @{@"stik": @(CXCDevice.stikDebugInstalled), @"vpn": @(CXCDevice.vpnActive)},
+        @"jit": self.jitInfo,
         @"needsSetup": @(!getPrefBool(@"cubexcraft.setup_done")),
         // без права increased-memory-limit игре не хватает памяти (поставлено не через iloader CubeXCraft)
         @"lowMemory": @(!CXCDevice.hasIncreasedMemory),

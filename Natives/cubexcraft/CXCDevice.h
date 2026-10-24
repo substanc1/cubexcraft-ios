@@ -23,6 +23,10 @@ typedef NS_ENUM(NSInteger, CXCQuality) {
 // JIT на iOS 17.4+ включает StikDebug (App Store), а ему нужен включённый LocalDevVPN
 + (BOOL)stikDebugInstalled;
 + (BOOL)vpnActive;                                   // какой-нибудь VPN включён (туннель LocalDevVPN — utun)
++ (BOOL)localDevVPNInstalled;
+// Открыть помощника JIT: стоит — само приложение (LocalDevVPN — сразу включить туннель и вернуться к нам),
+// нет — его страницу в App Store. app: @"stik" | @"vpn"
++ (void)openHelper:(NSString *)app;
 + (NSString *)memoryDescription;           // «8 ГБ, доступно приложению ~3,9 ГБ»
 
 // Куча Java (МБ) под выбранное качество и реальный запас памяти процесса

@@ -12,7 +12,7 @@
     lang: 'ru', screen: 'boot', info: {}, account: null,
     servers: null, profiles: [], sel: null, states: {}, friends: null, offline: false, loading: true,
     modsOpen: false, login: { login: '', password: '', busy: false, twofa: false, error: null },
-    setup: { stik: false, vpn: false, checking: false, done: false },
+    setup: { stik: false, vpn: false, vpnApp: false, checking: false, done: false },
     prep: null, jit: null, sheet: null, dialog: null, toast: null, wallet: null, addNick: '', versionTaps: 0,
   };
 
@@ -135,7 +135,7 @@
       <p class="lead" style="margin-top:-6px">${st.done ? t('su_p_done') : t('su_p')}</p>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${row(t('su_stik'), st.stik, t('su_stik_ok'), t('su_stik_no'), t('su_stik_h'), `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="stik">${t('su_install')}</div></div>`)}
-        ${row(t('su_vpn'), st.vpn, t('su_vpn_ok'), t('su_vpn_no'), t('su_vpn_h'), `<div style="margin-top:12px"><div class="btn tap" data-act="store" data-arg="vpn">${icon('external')}${t('su_open')}</div></div>`)}
+        ${row(t('su_vpn'), st.vpn, t('su_vpn_ok'), t('su_vpn_no'), t('su_vpn_h'), st.vpnApp ? `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="vpn">${t('su_vpn_on')}</div></div>` : `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="vpn">${t('su_install')}</div></div>`)}
         ${row(t('su_jit'), ready, t('su_jit_ok'), t('su_jit_no'), t('su_jit_h'))}
       </div></div></div>
       <div class="foot"><div class="btn primary tap" data-act="setupCheck">${st.done ? spin + t('su_go') : (st.checking ? spin + t('su_chk') : t('su_recheck'))}</div></div>`);
@@ -435,7 +435,7 @@
       render();
       try {
         const j = await native('jitCheck');
-        Object.assign(S.setup, { stik: j.stik, vpn: j.vpn });
+        Object.assign(S.setup, { stik: j.stik, vpn: j.vpn, vpnApp: j.vpnApp });
       } catch (e) { /* оставим как было */ }
       S.setup.checking = false;
       if (S.setup.stik && S.setup.vpn) {
@@ -557,6 +557,15 @@
       S.prep = null;
       S.jit = null;
       if (S.account) { go('main'); loadMain(); }
+    } else if (type === 'active') {
+      // вернулись в приложение (из StikDebug, LocalDevVPN, App Store) — свежие проверки JIT
+      Object.assign(S.setup, { stik: !!d.stik, vpn: !!d.vpn, vpnApp: !!d.vpnApp });
+      if (S.screen === 'setup') {
+        if (S.setup.stik && S.setup.vpn) ACT.setupCheck(); else render();
+      } else if (S.screen === 'jit' && S.jit && S.jit.state === 'fail') {
+        S.jit = Object.assign({}, S.jit, { stik: !!d.stik, vpn: !!d.vpn });
+        render();
+      }
     } else if (type === 'settings') {
       S.info = Object.assign(S.info, d);
       if (S.screen === 'settings') render();
@@ -577,6 +586,7 @@
     S.account = info.account || null;
     S.setup.stik = !!(info.jit && info.jit.stik);
     S.setup.vpn = !!(info.jit && info.jit.vpn);
+    S.setup.vpnApp = !!(info.jit && info.jit.vpnApp);
     if (info.lowMemory) S.dialog = 'memory';
     if (info.needsSetup && !(S.setup.stik && S.setup.vpn)) { S.screen = 'setup'; render(); return; }
     afterSetup();

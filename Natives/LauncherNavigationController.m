@@ -42,6 +42,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 @property(nonatomic) BOOL cxcJITHelpersChecked;
 @property(nonatomic, copy) void (^cxcPendingJIT)(void);
 @property(nonatomic) NSInteger cxcJITAttempt;
+@property(nonatomic) BOOL cxcVPNTried;
 
 @end
 
@@ -501,6 +502,7 @@ static NSString *const kCXCLocalDevVPNStore = @"itms-apps://apps.apple.com/app/i
         return;
     } else if (self.cxcEvents && !hasTrollStoreJIT) {
         // лаунчер CubeXCraft: состояние JIT показывает его экран, без системных окон
+        self.cxcVPNTried = NO;
         [self cxcInvokeAfterJIT:handler];
         return;
     } else if (hasTrollStoreJIT) {
@@ -560,6 +562,20 @@ static NSString *const kCXCLocalDevVPNStore = @"itms-apps://apps.apple.com/app/i
         self.cxcEvents(@"jit", @{@"state": @"fail", @"stik": @NO, @"vpn": @(CXCDevice.vpnActive)});
         return;
     }
+    // туннель выключен, а LocalDevVPN стоит — включаем его сами (он вернёт нас по cubexcraft://) и продолжаем
+    if (!CXCDevice.vpnActive && CXCDevice.localDevVPNInstalled && !self.cxcVPNTried) {
+        self.cxcVPNTried = YES;
+        self.cxcEvents(@"jit", @{@"state": @"wait"});
+        __block id observer = [NSNotificationCenter.defaultCenter addObserverForName:UIApplicationDidBecomeActiveNotification
+            object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            [NSNotificationCenter.defaultCenter removeObserver:observer];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                if (attempt == self.cxcJITAttempt) [self cxcInvokeAfterJIT:handler];
+            });
+        }];
+        [CXCDevice openHelper:@"vpn"];
+        return;
+    }
     NSString *scriptDataString = @"";
     if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM)) {
         NSData *scriptData = [NSData dataWithContentsOfFile:[NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
@@ -592,6 +608,7 @@ static NSString *const kCXCLocalDevVPNStore = @"itms-apps://apps.apple.com/app/i
 }
 
 - (void)cxcRetryJIT {
+    self.cxcVPNTried = NO;
     if (self.cxcPendingJIT) {
         [self cxcInvokeAfterJIT:self.cxcPendingJIT];
     }

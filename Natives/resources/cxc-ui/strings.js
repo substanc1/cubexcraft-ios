@@ -664,6 +664,10 @@ window.CXC_STR = {
   "ru": "Позвать в игру",
   "en": "Invite to game"
  },
+ "su_vpn_on": {
+  "ru": "Включить",
+  "en": "Turn on"
+ },
  "st_adv": {
   "ru": "Расширенные настройки",
   "en": "Advanced settings"
