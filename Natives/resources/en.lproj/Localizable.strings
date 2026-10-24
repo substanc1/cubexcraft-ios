@@ -332,3 +332,11 @@
 "controller_configurator.section.footer.menu_mappings" = "Bindings when the mouse is not locked, such as on the title screen or in the pause menu.";
 "controller_configurator.section.controller_style" = "Controller type";
 "controller_configurator.section.footer.controller_style" = "Show different controller button names in this configurator.";
+
+/* CubeXCraft */
+"preference.section.cubexcraft" = "CubeXCraft";
+"preference.title.quality" = "Graphics quality";
+"preference.detail.quality" = "Auto picks by device memory. Maximum — 8 GB+: full 32× textures, fancy graphics, render distance 10. Balanced — 6 GB: lite textures, distance 7. Light — 4 GB or less: lite textures, distance 5, 30 FPS.";
+"preference.title.auto_join" = "Join server on start";
+"preference.detail.auto_join" = "After loading, the game joins the CubeXTech server (play.cubexcraft.site).";
+"login.option.cubexcraft" = "CubeXCraft account";

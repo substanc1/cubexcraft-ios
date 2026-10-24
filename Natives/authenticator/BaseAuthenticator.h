@@ -26,3 +26,15 @@ typedef void(^Callback)(id status, BOOL success);
 + (void)clearTokenDataOfProfile:(NSString *)profile;
 
 @end
+
+// Аккаунт CubeXCraft (сайт cubexcraft.site): input — @{login, password}
+@interface CubeXCraftAuthenticator : BaseAuthenticator
+
+@property(nonatomic, copy) void (^statusHandler)(NSString *status);   // «подтвердите в Telegram» и т. п.
+@property(atomic) BOOL cancelled;
+
+- (id)initWithLogin:(NSString *)login password:(NSString *)password;
+- (NSString *)launcherToken;
+- (void)logout;
+
+@end

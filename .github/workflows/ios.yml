@@ -37,11 +37,11 @@ jobs:
       - name: Сборка
         run: |
           xcodebuild -version
-          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 SLIMMED=1 BOOTJDK="$JAVA_HOME/bin"
+          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 SLIMMED=0 BOOTJDK="$JAVA_HOME/bin"
           ls -la artifacts
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cubexcraft-ios-ipa
-          path: artifacts/*.ipa
+          name: CubeXCraft-ios
+          path: artifacts/CubeXCraft-*-ios.ipa
           if-no-files-found: error

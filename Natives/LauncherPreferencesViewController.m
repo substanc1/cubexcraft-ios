@@ -9,6 +9,7 @@
 #import "LauncherPrefContCfgViewController.h"
 #import "LauncherPrefManageJREViewController.h"
 #import "UIKit+hook.h"
+#import "cubexcraft/CXCDevice.h"
 
 #import "config.h"
 #import "ios_uikit_bridge.h"
@@ -44,7 +45,7 @@
     self.hasDetail = YES;
     self.prefDetailVisible = self.navigationController == nil;
     
-    self.prefSections = @[@"general", @"video", @"control", @"java", @"debug"];
+    self.prefSections = @[@"cubexcraft", @"general", @"video", @"control", @"java", @"debug"];
 
     self.rendererKeys = getRendererKeys(NO);
     self.rendererList = getRendererNames(NO);
@@ -53,6 +54,29 @@
         return self.navigationController != nil;
     };
     self.prefContents = @[
+        @[
+            // CubeXCraft: качество под телефон и автовход на сервер
+            @{@"icon": @"sparkles"},
+            @{@"key": @"quality",
+              @"hasDetail": @YES,
+              @"icon": @"dial.medium",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[@"auto", @"max", @"balanced", @"light"],
+              @"pickList": @[
+                  [NSString stringWithFormat:@"Авто (%@)", [CXCDevice titleFor:CXCDevice.autoQuality]],
+                  [CXCDevice titleFor:CXCQualityMax],
+                  [CXCDevice titleFor:CXCQualityBalanced],
+                  [CXCDevice titleFor:CXCQualityLight]
+              ]
+            },
+            @{@"key": @"auto_join",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.right.circle",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
+            }
+        ],
         @[
             // General settings
             @{@"icon": @"cube"},

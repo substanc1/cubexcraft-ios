@@ -64,7 +64,9 @@
     NSDictionary *selected = self.accountList[indexPath.row];
     // By default, display the saved username
     cell.textLabel.text = selected[@"username"];
-    if ([selected[@"username"] hasPrefix:@"Demo."]) {
+    if ([selected[@"type"] isEqual:@"cubexcraft"]) {
+        cell.detailTextLabel.text = localize(@"login.option.cubexcraft", nil);
+    } else if ([selected[@"username"] hasPrefix:@"Demo."]) {
         // Remove the prefix "Demo."
         cell.textLabel.text = [selected[@"username"] substringFromIndex:5];
         cell.detailTextLabel.text = localize(@"login.option.demo", nil);
@@ -94,12 +96,34 @@
     self.tableView.userInteractionEnabled = NO;
     [self addActivityIndicatorTo:cell];
 
+    BaseAuthenticator *auth = [BaseAuthenticator loadSavedName:self.accountList[indexPath.row][@"username"]];
+    if ([auth isKindOfClass:CubeXCraftAuthenticator.class]) {
+        ((CubeXCraftAuthenticator *)auth).statusHandler = ^(NSString *status) {
+            cell.detailTextLabel.text = status;
+        };
+        [auth refreshTokenWithCallback:^(id status, BOOL success) {
+            dispatch_async(dispatch_get_main_queue(), ^(){
+                [self removeActivityIndicatorFrom:cell];
+                self.modalInPresentation = NO;
+                self.tableView.userInteractionEnabled = YES;
+                if (success) {
+                    self.whenItemSelected();
+                    [self dismissViewControllerAnimated:YES completion:nil];
+                } else {
+                    cell.detailTextLabel.text = localize(@"login.option.cubexcraft", nil);
+                    showDialog(localize(@"Error", nil), [status description]);
+                }
+            });
+        }];
+        return;
+    }
+
     id callback = ^(id status, BOOL success) {
         dispatch_async(dispatch_get_main_queue(), ^(){
             [self callbackMicrosoftAuth:status success:success forCell:cell];
         });
     };
-    [[BaseAuthenticator loadSavedName:self.accountList[indexPath.row][@"username"]] refreshTokenWithCallback:callback];
+    [auth refreshTokenWithCallback:callback];
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -115,6 +139,9 @@
         NSString *xuid = self.accountList[indexPath.row][@"xuid"];
         if (xuid) {
             [MicrosoftAuthenticator clearTokenDataOfProfile:xuid];
+        }
+        if ([self.accountList[indexPath.row][@"type"] isEqual:@"cubexcraft"]) {
+            [(CubeXCraftAuthenticator *)[BaseAuthenticator loadSavedName:str] logout];
         }
         [fm removeItemAtPath:path error:nil];
         [self.accountList removeObjectAtIndex:indexPath.row];
@@ -140,7 +167,66 @@
     return result;
 }
 
+// CubeXCraft: в игру пускает только аккаунт сайта (сервер проверяет вход через cubexcraft.site)
 - (void)actionAddAccount:(UITableViewCell *)sender {
+    [self actionLoginCubeXCraft:sender message:nil login:nil];
+}
+
+- (void)actionLoginCubeXCraft:(UITableViewCell *)sender message:(NSString *)message login:(NSString *)login {
+    UIAlertController *form = [UIAlertController alertControllerWithTitle:@"Вход в CubeXCraft"
+        message:message ?: @"Ник или почта и пароль от cubexcraft.site" preferredStyle:UIAlertControllerStyleAlert];
+    [form addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.placeholder = @"Ник или почта";
+        field.text = login;
+        field.textContentType = UITextContentTypeUsername;
+        field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        field.autocorrectionType = UITextAutocorrectionTypeNo;
+        field.clearButtonMode = UITextFieldViewModeWhileEditing;
+    }];
+    [form addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.placeholder = @"Пароль";
+        field.secureTextEntry = YES;
+        field.textContentType = UITextContentTypePassword;
+    }];
+    [form addAction:[UIAlertAction actionWithTitle:@"Войти" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NSString *loginText = [form.textFields[0].text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+        NSString *password = form.textFields[1].text;
+        if (loginText.length == 0 || password.length == 0) {
+            [self actionLoginCubeXCraft:sender message:@"Введите ник (или почту) и пароль" login:loginText];
+            return;
+        }
+        CubeXCraftAuthenticator *auth = [[CubeXCraftAuthenticator alloc] initWithLogin:loginText password:password];
+        UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"Вход…" message:@"Связь с cubexcraft.site"
+            preferredStyle:UIAlertControllerStyleAlert];
+        [wait addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:^(UIAlertAction *a) {
+            auth.cancelled = YES;
+        }]];
+        auth.statusHandler = ^(NSString *status) {
+            wait.message = status;
+        };
+        [self presentViewController:wait animated:YES completion:nil];
+        [auth loginWithCallback:^(id status, BOOL success) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [wait dismissViewControllerAnimated:YES completion:^{
+                    if (success) {
+                        setPrefObject(@"internal.selected_account", auth.authData[@"username"]);
+                        self.whenItemSelected();
+                        [self dismissViewControllerAnimated:YES completion:nil];
+                    } else if (!auth.cancelled) {
+                        [self actionLoginCubeXCraft:sender message:[status description] login:loginText];
+                    }
+                }];
+            });
+        }];
+    }]];
+    [form addAction:[UIAlertAction actionWithTitle:@"Регистрация" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:@"https://www.cubexcraft.site/register"] options:@{} completionHandler:nil];
+    }]];
+    [form addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:form animated:YES completion:nil];
+}
+
+- (void)actionAddAccountOther:(UITableViewCell *)sender {
     UIAlertController *picker = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     UIAlertAction *actionMicrosoft = [UIAlertAction actionWithTitle:localize(@"login.option.microsoft", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self actionLoginMicrosoft:sender];

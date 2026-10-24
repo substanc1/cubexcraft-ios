@@ -17,6 +17,7 @@
 #import "UIKit+hook.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
+#import "cubexcraft/CXCInstaller.h"
 
 #import <objc/runtime.h>
 #include <sys/time.h>
@@ -44,6 +45,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    // CubeXCraft: профиль сборки CubeXTech есть всегда и выбран по умолчанию
+    [CXCInstaller ensureLauncherProfile];
 
     if ([self respondsToSelector:@selector(setNeedsUpdateOfScreenEdgesDeferringSystemGestures)]) {
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
@@ -294,7 +297,59 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 
     [self setInteractionEnabled:NO forDownloading:YES];
 
-    NSString *versionId = PLProfiles.current.profiles[self.versionTextField.text][@"lastVersionId"];
+    if ([CXCInstaller isCubeXCraftProfileSelected]) {
+        [self launchCubeXCraft:sender];
+        return;
+    }
+    [self startDownloadForVersionId:PLProfiles.current.profiles[self.versionTextField.text][@"lastVersionId"]];
+}
+
+// CubeXTech: свежий токен игры → сборка с сайта (моды, конфиги, библиотеки, описание версии) → обычная загрузка
+// Amethyst (ванильные 1.21.1 и ассеты) → запуск
+- (void)launchCubeXCraft:(UIButton *)sender {
+    BaseAuthenticator *auth = BaseAuthenticator.current;
+    if (![auth isKindOfClass:CubeXCraftAuthenticator.class]) {
+        [self setInteractionEnabled:YES forDownloading:YES];
+        showDialog(@"CubeXCraft", @"Для игры на сервере нужен аккаунт CubeXCraft — войдите им в списке аккаунтов.");
+        UIViewController *view = [(UINavigationController *)self.splitViewController.viewControllers[0] viewControllers][0];
+        [view performSelector:@selector(selectAccount:) withObject:sender];
+        return;
+    }
+    CubeXCraftAuthenticator *cxc = (CubeXCraftAuthenticator *)auth;
+    cxc.statusHandler = ^(NSString *status) {
+        self.progressText.text = status;
+    };
+    [cxc refreshTokenWithCallback:^(id status, BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!success) {
+                [self setInteractionEnabled:YES forDownloading:YES];
+                showDialog(@"CubeXCraft", [status description]);
+                return;
+            }
+            NSString *token = cxc.launcherToken;
+            CXCInstaller *installer = [CXCInstaller new];
+            installer.statusHandler = ^(NSString *text) {
+                self.progressText.text = text;
+            };
+            self.progressViewMain.observedProgress = installer.progress;
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                NSString *error = [installer runWithLauncherToken:token];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.progressViewMain.observedProgress = nil;
+                    if (error) {
+                        [self setInteractionEnabled:YES forDownloading:YES];
+                        self.progressText.text = nil;
+                        showDialog(@"CubeXCraft", error);
+                        return;
+                    }
+                    [self startDownloadForVersionId:CXC_VERSION_ID];
+                });
+            });
+        });
+    }];
+}
+
+- (void)startDownloadForVersionId:(NSString *)versionId {
     NSDictionary *object = [remoteVersionList filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(id == %@)", versionId]].firstObject;
     if (!object) {
         object = @{

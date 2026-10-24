@@ -29,7 +29,9 @@ static BaseAuthenticator *current = nil;
         return nil;
     }
 
-    if ([authData[@"expiresAt"] longValue] == 0) {
+    if ([authData[@"type"] isEqual:@"cubexcraft"]) {
+        return [[CubeXCraftAuthenticator alloc] initWithData:authData];
+    } else if ([authData[@"expiresAt"] longValue] == 0) {
         return [[LocalAuthenticator alloc] initWithData:authData];
     } else { 
         return [[MicrosoftAuthenticator alloc] initWithData:authData];

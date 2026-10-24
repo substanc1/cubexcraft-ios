@@ -51,7 +51,7 @@
             @"java_homes": @{
                 @"0": @{
                     @"1_16_5_older": @"8",
-                    @"1_17_newer": @"17",
+                    @"1_17_newer": @"21",   // CubeXTech — NeoForge 1.21.1, Java 21
                     @"execute_jar": @"8"
                 }.mutableCopy,
                 @"8": @"internal",
@@ -66,6 +66,13 @@
         @"internal": @{
             @"isolated": @NO,
             @"latest_version": [NSDictionary new]
+        }.mutableCopy,
+        // CubeXCraft: сборка CubeXTech с сайта, качество под телефон (auto / max / balanced / light)
+        @"cubexcraft": @{
+            @"files_dir": @"CubeXCraft-mobile",
+            @"quality": @"auto",
+            @"applied_quality": @"",
+            @"auto_join": @YES
         }.mutableCopy
     }.mutableCopy;
 
