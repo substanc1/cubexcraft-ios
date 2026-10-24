@@ -1,13 +1,34 @@
 #import <os/proc.h>
+#import <UIKit/UIKit.h>
 #import "CXCDevice.h"
 #import "../LauncherPreferences.h"
 #import "../utils.h"
 
 @implementation CXCDevice
 
+// В журнал: запас памяти до выгрузки системой — раз в 15 с и при предупреждении iOS. iOS убивает за память молча,
+// без исключения в логе — по этим строкам видно, что дело в памяти и на каком шаге.
++ (void)load {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [NSNotificationCenter.defaultCenter addObserverForName:UIApplicationDidReceiveMemoryWarningNotification object:nil
+            queue:nil usingBlock:^(NSNotification *note) {
+            NSLog(@"[CXC] iOS: мало памяти! до выгрузки осталось %llu МБ", (unsigned long long)(os_proc_available_memory() >> 20));
+        }];
+        static dispatch_source_t timer;
+        timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0));
+        dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC), 15 * NSEC_PER_SEC, NSEC_PER_SEC);
+        dispatch_source_set_event_handler(timer, ^{
+            NSLog(@"[CXC] память: до выгрузки %llu МБ", (unsigned long long)(os_proc_available_memory() >> 20));
+        });
+        dispatch_resume(timer);
+    });
+}
+
 + (CXCQuality)autoQuality {
     unsigned long long gb = NSProcessInfo.processInfo.physicalMemory >> 20;   // МБ
-    if (gb >= 7300) return CXCQualityMax;        // 8 ГБ и больше
+    // «Максимум» (полные текстуры) — только когда iOS дала приложению больше памяти (AltStore, право
+    // increased-memory-limit); с Sideloadly и бесплатным Apple ID на 8 ГБ — «Сбалансировано»
+    if (gb >= 7300) return getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit") ? CXCQualityMax : CXCQualityBalanced;
     if (gb >= 5300) return CXCQualityBalanced;   // 6 ГБ
     return CXCQualityLight;                      // 4 ГБ и меньше
 }
@@ -43,11 +64,13 @@
 }
 
 + (NSInteger)heapMBForQuality:(CXCQuality)quality {
-    // Сколько ещё можно занять до выгрузки системой (jetsam). Без права increased-memory-limit (бесплатный
-    // Apple ID) это примерно половина ОЗУ; куче Java — ~60 %, остальное — натив, текстуры, метапространство.
+    // Сколько ещё можно занять до выгрузки системой (jetsam). Без права increased-memory-limit (Sideloadly с
+    // бесплатным Apple ID) это ~3,3 ГБ на 8-гигабайтном айфоне: при куче 2 ГБ iOS убивала игру на входе в мир
+    // (текстуры, заставка, метапространство 84 модов — вне кучи). Поэтому без права — половина запаса, с ним — 60 %.
     NSInteger avail = (NSInteger)(os_proc_available_memory() >> 20);
+    BOOL raised = getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit");
     NSInteger cap = quality == CXCQualityMax ? 3584 : quality == CXCQualityBalanced ? 2560 : 1792;
-    NSInteger heap = avail > 0 ? (NSInteger)(avail * 0.6) : (NSInteger)((NSProcessInfo.processInfo.physicalMemory >> 20) / 4);
+    NSInteger heap = avail > 0 ? (NSInteger)(avail * (raised ? 0.6 : 0.5)) : (NSInteger)((NSProcessInfo.processInfo.physicalMemory >> 20) / 4);
     heap = MIN(heap, cap);
     return MAX(heap, 1024);
 }
@@ -106,11 +129,13 @@
     setPrefInt(@"java.allocated_memory", heap);
     NSLog(@"[CXC] качество %@, куча %ld МБ (%@)", [self titleFor:q], (long)heap, self.memoryDescription);
 
-    // настройки игры трогаем только при смене качества — свои правки игрока в игре не затираются
+    // настройки игры трогаем только при смене качества — свои правки игрока в игре не затираются.
+    // Метка — файлом рядом с options.txt (не в настройках Amethyst: те молча не сохраняют незнакомые ключи)
     NSString *key = [self keyFor:q];
     NSString *optionsPath = [gameDir stringByAppendingPathComponent:@"options.txt"];
-    if ([getPrefObject(@"cubexcraft.applied_quality") isEqual:key] &&
-        [NSFileManager.defaultManager fileExistsAtPath:optionsPath]) {
+    NSString *markPath = [gameDir stringByAppendingPathComponent:@".cxc-quality"];
+    NSString *applied = [NSString stringWithContentsOfFile:markPath encoding:NSUTF8StringEncoding error:nil];
+    if ([applied isEqualToString:key] && [NSFileManager.defaultManager fileExistsAtPath:optionsPath]) {
         return;
     }
     NSMutableArray *lines = [self readOptions:optionsPath];
@@ -137,7 +162,8 @@
     [self setLitePack:(q != CXCQualityMax) in:lines];
     NSString *text = [[lines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
     if ([text writeToFile:optionsPath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
-        setPrefObject(@"cubexcraft.applied_quality", key);
+        [key writeToFile:markPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+        NSLog(@"[CXC] options.txt: пресет «%@»", [self titleFor:q]);
     }
 }
 

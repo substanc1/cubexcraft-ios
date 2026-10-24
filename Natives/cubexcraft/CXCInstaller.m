@@ -161,8 +161,8 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
         NSArray *meta = files[path];
         NSString *dest = [gameDir stringByAppendingPathComponent:path];
         BOOL exists = [NSFileManager.defaultManager fileExistsAtPath:dest];
-        // личные файлы игрока (options.txt и т. п.) — только если их ещё нет
-        if (exists && pathMatches(path, exclusions)) continue;
+        // личные файлы игрока (options.txt и т. п.) — только если их ещё нет; options.txt правит пресет качества
+        if (exists && (pathMatches(path, exclusions) || [path isEqualToString:@"options.txt"])) continue;
         if (exists && [[self sha1Of:dest] isEqualToString:meta[1]]) continue;
         [jobs addObject:@{@"url": [base stringByAppendingString:[self urlEncodePath:path]], @"dest": dest,
             @"size": meta[0], @"sha1": meta[1]}];
