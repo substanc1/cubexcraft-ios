@@ -12,6 +12,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) NSProgress *progress;          // байты файлов сборки
 @property(nonatomic, copy, nullable) void (^statusHandler)(NSString *status);
 @property(atomic) BOOL cancelled;
+// для экрана подготовки: 0 — проверка файлов, 1 — загрузка; файлы и байты загрузки
+@property(atomic, readonly) NSInteger phase;
+@property(atomic, readonly) NSInteger filesTotal;
+@property(atomic, readonly) NSInteger filesDone;
+@property(atomic, readonly) long long bytesTotal;
 
 // Профиль CubeXTech в launcher_profiles.json Amethyst (создать/обновить и выбрать)
 + (void)ensureLauncherProfile;

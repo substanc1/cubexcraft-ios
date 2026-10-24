@@ -32,6 +32,7 @@ typedef void(^Callback)(id status, BOOL success);
 
 @property(nonatomic, copy) void (^statusHandler)(NSString *status);   // «подтвердите в Telegram» и т. п.
 @property(atomic) BOOL cancelled;
+@property(atomic) NSInteger lastStatus;   // HTTP-код последней ошибки входа (0 — нет связи)
 
 - (id)initWithLogin:(NSString *)login password:(NSString *)password;
 - (NSString *)launcherToken;

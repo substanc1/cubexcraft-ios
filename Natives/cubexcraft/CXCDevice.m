@@ -1,3 +1,4 @@
+#import <CFNetwork/CFNetwork.h>
 #import <os/proc.h>
 #import <UIKit/UIKit.h>
 #import "CXCDevice.h"
@@ -22,6 +23,25 @@
         });
         dispatch_resume(timer);
     });
+}
+
++ (BOOL)hasIncreasedMemory {
+    return getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit");
+}
+
++ (BOOL)stikDebugInstalled {
+    return [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:@"stikjit://"]];
+}
+
+// туннельные интерфейсы в настройках прокси системы — приблизительно, поэтому игрок всегда может продолжить
++ (BOOL)vpnActive {
+    NSDictionary *settings = CFBridgingRelease(CFNetworkCopySystemProxySettings());
+    for (NSString *name in [settings[@"__SCOPED__"] allKeys]) {
+        if ([name hasPrefix:@"utun"] || [name hasPrefix:@"ipsec"] || [name hasPrefix:@"ppp"] || [name hasPrefix:@"tun"]) {
+            return YES;
+        }
+    }
+    return NO;
 }
 
 + (CXCQuality)autoQuality {

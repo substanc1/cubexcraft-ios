@@ -21,6 +21,7 @@ typedef void (^CXCApiCallback)(NSDictionary * _Nullable json, NSInteger status, 
 + (void)poll2FA:(NSString *)challenge callback:(CXCApiCallback)callback;
 + (void)cancel2FA:(NSString *)challenge;
 
++ (void)request:(NSString *)method path:(NSString *)path token:(nullable NSString *)token body:(nullable NSDictionary *)body callback:(CXCApiCallback)callback;
 + (void)get:(NSString *)path token:(nullable NSString *)token callback:(CXCApiCallback)callback;
 + (void)post:(NSString *)path token:(nullable NSString *)token body:(nullable NSDictionary *)body callback:(CXCApiCallback)callback;
 

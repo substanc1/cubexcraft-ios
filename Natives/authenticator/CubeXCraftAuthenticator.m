@@ -57,6 +57,7 @@ static NSString *dashedUUID(NSString *uuid) {
     }
     [CXCApi poll2FA:challenge callback:^(NSDictionary *json, NSInteger status, NSString *error) {
         if (error) {
+            self.lastStatus = status;
             callback(error, NO);
         } else if (json[@"accessToken"]) {
             [self acceptLogin:json callback:callback];
@@ -70,6 +71,7 @@ static NSString *dashedUUID(NSString *uuid) {
     NSDictionary *input = self.authData[@"input"];
     [CXCApi loginWithLogin:input[@"login"] password:input[@"password"] callback:^(NSDictionary *json, NSInteger status, NSString *error) {
         if (error) {
+            self.lastStatus = status;
             callback(error, NO);
             return;
         }

@@ -274,6 +274,17 @@ static GameSurfaceView* pojavWindow;
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     [self setNeedsUpdateOfPrefersPointerLocked];
+    // CubeXCraft: игра — только горизонтально, чтобы не ломалось отображение (лаунчер — вертикально)
+    if (@available(iOS 16.0, *)) {
+        [self setNeedsUpdateOfSupportedInterfaceOrientations];
+        UIWindowSceneGeometryPreferencesIOS *landscape = [[UIWindowSceneGeometryPreferencesIOS alloc]
+            initWithInterfaceOrientations:UIInterfaceOrientationMaskLandscape];
+        [self.view.window.windowScene requestGeometryUpdateWithPreferences:landscape errorHandler:nil];
+    }
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad ? UIInterfaceOrientationMaskAll : UIInterfaceOrientationMaskLandscape;
 }
 
 - (void)updateAudioSettings {

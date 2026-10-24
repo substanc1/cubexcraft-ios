@@ -6,6 +6,7 @@
 #import "LauncherSplitViewController.h"
 #import "PLLogOutputView.h"
 #import "SurfaceViewController.h"
+#import "cubexcraft/CXCWebLauncherViewController.h"
 
 #include <objc/runtime.h>
 #include "ios_uikit_bridge.h"
@@ -146,7 +147,7 @@ void UIKit_returnToSplitView() {
                 window.rootViewController = tmpRootVC;
                 tmpRootVC = nil;
             } else {
-                window.rootViewController = [[LauncherSplitViewController alloc] initWithStyle:UISplitViewControllerStyleDoubleColumn];
+                window.rootViewController = CXCLauncherRoot();
             }
             [window makeKeyAndVisible];
         }];
@@ -154,7 +155,8 @@ void UIKit_returnToSplitView() {
 }
 
 void launchInitialViewController(UIWindow *window) {
-    window.rootViewController = [[LauncherSplitViewController alloc] initWithStyle:UISplitViewControllerStyleDoubleColumn];
+    // CubeXCraft: приложение открывается сразу в наш лаунчер (SCRUM-363); интерфейс Amethyst — только по скрытому входу
+    window.rootViewController = CXCLauncherRoot();
 #if 0
     if (getPrefBool(@"internal.internal_launch_on_boot")) {
         window.rootViewController = [[SurfaceViewController alloc] init];

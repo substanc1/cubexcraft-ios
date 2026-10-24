@@ -17,6 +17,12 @@ typedef NS_ENUM(NSInteger, CXCQuality) {
 + (CXCQuality)autoQuality;
 + (CXCQuality)effectiveQuality;            // с учётом выбора игрока (cubexcraft.quality)
 + (NSString *)titleFor:(CXCQuality)quality;
++ (NSString *)keyFor:(CXCQuality)quality;            // max / balanced / light
++ (BOOL)hasIncreasedMemory;                          // право increased-memory-limit (ставили iloader CubeXCraft)
+
+// JIT на iOS 17.4+ включает StikDebug (App Store), а ему нужен включённый LocalDevVPN
++ (BOOL)stikDebugInstalled;
++ (BOOL)vpnActive;                                   // какой-нибудь VPN включён (туннель LocalDevVPN — utun)
 + (NSString *)memoryDescription;           // «8 ГБ, доступно приложению ~3,9 ГБ»
 
 // Куча Java (МБ) под выбранное качество и реальный запас памяти процесса

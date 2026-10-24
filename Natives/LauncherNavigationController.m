@@ -17,6 +17,7 @@
 #import "UIKit+hook.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
+#import "cubexcraft/CXCDevice.h"
 #import "cubexcraft/CXCInstaller.h"
 
 #import <CFNetwork/CFNetwork.h>
@@ -39,6 +40,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 @property(nonatomic) UIBarButtonItem* buttonInstallItem;
 @property(nonatomic) int profileSelectedAt;
 @property(nonatomic) BOOL cxcJITHelpersChecked;
+@property(nonatomic, copy) void (^cxcPendingJIT)(void);
+@property(nonatomic) NSInteger cxcJITAttempt;
 
 @end
 
@@ -46,21 +49,6 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 // игрок застревал на «Ожидание JIT». Перед прыжком в StikDebug проверяем оба и подсказываем, что сделать.
 static NSString *const kCXCStikDebugStore = @"itms-apps://apps.apple.com/app/id6744045754";
 static NSString *const kCXCLocalDevVPNStore = @"itms-apps://apps.apple.com/app/id6755608044";
-
-static BOOL CXCStikDebugInstalled(void) {
-    return [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:@"stikjit://"]];
-}
-
-// Включён ли какой-нибудь VPN: туннельные интерфейсы в настройках прокси системы (LocalDevVPN — utun)
-static BOOL CXCVPNActive(void) {
-    NSDictionary *settings = CFBridgingRelease(CFNetworkCopySystemProxySettings());
-    for (NSString *name in [settings[@"__SCOPED__"] allKeys]) {
-        if ([name hasPrefix:@"utun"] || [name hasPrefix:@"ipsec"] || [name hasPrefix:@"ppp"] || [name hasPrefix:@"tun"]) {
-            return YES;
-        }
-    }
-    return NO;
-}
 
 @implementation LauncherNavigationController
 
@@ -388,6 +376,9 @@ static BOOL CXCVPNActive(void) {
                 [weakSelf setInteractionEnabled:YES forDownloading:YES];
                 weakSelf.task = nil;
                 weakSelf.progressVC = nil;
+                if (weakSelf.cxcEvents) {
+                    weakSelf.cxcEvents(@"prepError", @{@"message": @"Не удалось скачать файлы игры"});
+                }
             });
         };
         [self.task downloadVersion:object];
@@ -508,6 +499,10 @@ static BOOL CXCVPNActive(void) {
         [ALTServerManager.sharedManager stopDiscovering];
         handler();
         return;
+    } else if (self.cxcEvents && !hasTrollStoreJIT) {
+        // лаунчер CubeXCraft: состояние JIT показывает его экран, без системных окон
+        [self cxcInvokeAfterJIT:handler];
+        return;
     } else if (hasTrollStoreJIT) {
         NSURL *jitURL = [NSURL URLWithString:[NSString stringWithFormat:@"apple-magnifier://enable-jit?bundle-id=%@", NSBundle.mainBundle.bundleIdentifier]];
         [UIApplication.sharedApplication openURL:jitURL options:@{} completionHandler:nil];
@@ -556,14 +551,70 @@ static BOOL CXCVPNActive(void) {
     });
 }
 
+// Лаунчер CubeXCraft: открываем StikDebug и ждём JIT; через 25 с — экран «не вышло» с проверками,
+// но ждать продолжаем: StikDebug мог просто задержаться. Повтор и отмена сбивают номер попытки.
+- (void)cxcInvokeAfterJIT:(void(^)(void))handler {
+    self.cxcPendingJIT = handler;
+    NSInteger attempt = ++self.cxcJITAttempt;
+    if (!CXCDevice.stikDebugInstalled) {
+        self.cxcEvents(@"jit", @{@"state": @"fail", @"stik": @NO, @"vpn": @(CXCDevice.vpnActive)});
+        return;
+    }
+    NSString *scriptDataString = @"";
+    if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM)) {
+        NSData *scriptData = [NSData dataWithContentsOfFile:[NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+        scriptDataString = [@"&script-data=" stringByAppendingString:[scriptData base64EncodedStringWithOptions:0]];
+    }
+    [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", NSBundle.mainBundle.bundleIdentifier, getpid(), scriptDataString]] options:@{} completionHandler:nil];
+    self.cxcEvents(@"jit", @{@"state": @"wait"});
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:25];
+        BOOL reported = NO;
+        while (!isJITEnabled(false)) {
+            if (attempt != self.cxcJITAttempt) return;
+            if (!reported && deadline.timeIntervalSinceNow < 0) {
+                reported = YES;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (attempt == self.cxcJITAttempt) {
+                        self.cxcEvents(@"jit", @{@"state": @"fail", @"stik": @YES, @"vpn": @(CXCDevice.vpnActive)});
+                    }
+                });
+            }
+            usleep(1000 * 200);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (attempt != self.cxcJITAttempt) return;
+            self.cxcPendingJIT = nil;
+            [ALTServerManager.sharedManager stopDiscovering];
+            handler();
+        });
+    });
+}
+
+- (void)cxcRetryJIT {
+    if (self.cxcPendingJIT) {
+        [self cxcInvokeAfterJIT:self.cxcPendingJIT];
+    }
+}
+
+- (void)cxcCancel {
+    self.cxcJITAttempt++;
+    self.cxcPendingJIT = nil;
+    [self.task.progress cancel];
+}
+
+- (NSProgress *)cxcTaskProgress {
+    return self.task.progress;
+}
+
 // YES — всё на месте, можно открывать StikDebug; NO — показали подсказку, продолжит она сама
 - (BOOL)cxcCheckJITHelpers:(void(^)(void))handler {
     NSString *title, *message, *store;
-    if (!CXCStikDebugInstalled()) {
+    if (!CXCDevice.stikDebugInstalled) {
         title = @"Нужен StikDebug";
         message = @"Игра на iPhone запускается с JIT, а включает его бесплатное приложение StikDebug. Установите его из App Store и снова нажмите «Играть».";
         store = kCXCStikDebugStore;
-    } else if (!CXCVPNActive()) {
+    } else if (!CXCDevice.vpnActive) {
         title = @"Включите LocalDevVPN";
         message = @"StikDebug работает через LocalDevVPN. Откройте LocalDevVPN, включите его и вернитесь сюда. Если его нет — установите из App Store.";
         store = kCXCLocalDevVPNStore;
@@ -624,6 +675,15 @@ static BOOL CXCVPNActive(void) {
 }
 
 #pragma mark - View controller UI mode
+
+// CubeXCraft: корень окна — этот контроллер; ориентацию решает экран внутри (лаунчер — вертикально)
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return self.topViewController ? self.topViewController.supportedInterfaceOrientations : [super supportedInterfaceOrientations];
+}
+
+- (UIViewController *)childViewControllerForStatusBarStyle {
+    return self.topViewController;
+}
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
     return YES;

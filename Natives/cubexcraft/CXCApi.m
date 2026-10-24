@@ -90,6 +90,12 @@ static NSString *const kKeychainService = @"site.cubexcraft.launcher";
     }] resume];
 }
 
+// для страницы лаунчера: любой метод, тело — JSON (у GET тела нет)
++ (void)request:(NSString *)method path:(NSString *)path token:(NSString *)token body:(NSDictionary *)body callback:(CXCApiCallback)callback {
+    BOOL get = [method isEqualToString:@"GET"];
+    [self send:[self requestFor:path method:method token:token body:get ? nil : (body ?: @{})] callback:callback];
+}
+
 + (void)get:(NSString *)path token:(NSString *)token callback:(CXCApiCallback)callback {
     [self send:[self requestFor:path method:@"GET" token:token body:nil] callback:callback];
 }

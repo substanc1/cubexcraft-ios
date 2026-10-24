@@ -11,6 +11,13 @@
 // там те же jar, что в classPath профиля (без натива: LWJGL у Amethyst свой).
 static NSString *const kLibrariesDir = @"CubeXCraft";
 
+@interface CXCInstaller ()
+@property(atomic, readwrite) NSInteger phase;
+@property(atomic, readwrite) NSInteger filesTotal;
+@property(atomic, readwrite) NSInteger filesDone;
+@property(atomic, readwrite) long long bytesTotal;
+@end
+
 @implementation CXCInstaller {
     NSProgress *_progress;
     NSMutableDictionary *_hashCache;
@@ -464,6 +471,7 @@ static NSString *mavenName(NSString *rel) {
 #pragma mark - Скачивание
 
 - (NSString *)download:(NSArray *)jobs {
+    self.phase = 1;
     if (jobs.count == 0) {
         _progress.totalUnitCount = 1;
         _progress.completedUnitCount = 1;
@@ -471,6 +479,9 @@ static NSString *mavenName(NSString *rel) {
     }
     long long total = 0;
     for (NSDictionary *j in jobs) total += [j[@"size"] longLongValue];
+    self.filesTotal = jobs.count;
+    self.filesDone = 0;
+    self.bytesTotal = total;
     _progress.totalUnitCount = MAX(total, 1);
     _progress.completedUnitCount = 0;
     [self status:[NSString stringWithFormat:@"Загрузка сборки: %lu файлов, %.1f МБ", (unsigned long)jobs.count, total / 1048576.0]];
@@ -524,6 +535,7 @@ static NSString *mavenName(NSString *rel) {
         if (!error) {
             @synchronized (_progress) {
                 _progress.completedUnitCount += [job[@"size"] longLongValue];
+                self.filesDone = self.filesDone + 1;
             }
             return nil;
         }
