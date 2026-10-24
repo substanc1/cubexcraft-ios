@@ -1,5 +1,7 @@
 #import <CFNetwork/CFNetwork.h>
 #include <ifaddrs.h>
+#include <mach/mach.h>
+#include <malloc/malloc.h>
 #include <net/if.h>
 #include <sys/socket.h>
 #import <os/proc.h>
@@ -9,6 +11,35 @@
 #import "../utils.h"
 
 @implementation CXCDevice
+
+// Что ещё может кончиться, кроме запаса до выгрузки: 25.10 Sodium падал на realloc ~6 МБ при запасе 1,6 ГБ —
+// смотрим адресное пространство, число областей памяти и malloc
+static NSString *cxcProcessMemoryDetails(void) {
+    task_vm_info_data_t vm;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vm, &count) != KERN_SUCCESS) {
+        return @"task_info не ответил";
+    }
+    unsigned regions = 0;
+    vm_address_t address = 0;
+    vm_size_t size = 0;
+    while (regions < 1000000) {
+        vm_region_basic_info_data_64_t info;
+        mach_msg_type_number_t infoCount = VM_REGION_BASIC_INFO_COUNT_64;
+        mach_port_t object = MACH_PORT_NULL;
+        if (vm_region_64(mach_task_self(), &address, &size, VM_REGION_BASIC_INFO_64, (vm_region_info_t)&info,
+                &infoCount, &object) != KERN_SUCCESS) {
+            break;
+        }
+        regions++;
+        address += size;
+    }
+    malloc_statistics_t stats;
+    malloc_zone_statistics(NULL, &stats);
+    return [NSString stringWithFormat:@"след %llu МБ, до лимита %llu МБ, адреса %.1f ГБ, областей %u, malloc %zu/%zu МБ",
+        vm.phys_footprint >> 20, vm.limit_bytes_remaining >> 20, vm.virtual_size / 1073741824.0, regions,
+        stats.size_in_use >> 20, stats.size_allocated >> 20];
+}
 
 // В журнал: запас памяти до выгрузки системой — раз в 15 с и при предупреждении iOS. iOS убивает за память молча,
 // без исключения в логе — по этим строкам видно, что дело в памяти и на каком шаге.
@@ -22,7 +53,8 @@
         timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0));
         dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC), 15 * NSEC_PER_SEC, NSEC_PER_SEC);
         dispatch_source_set_event_handler(timer, ^{
-            NSLog(@"[CXC] память: до выгрузки %llu МБ", (unsigned long long)(os_proc_available_memory() >> 20));
+            NSLog(@"[CXC] память: до выгрузки %llu МБ · %@", (unsigned long long)(os_proc_available_memory() >> 20),
+                cxcProcessMemoryDetails());
         });
         dispatch_resume(timer);
     });
