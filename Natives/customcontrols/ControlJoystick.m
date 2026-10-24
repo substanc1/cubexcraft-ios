@@ -195,11 +195,14 @@ NSMutableDictionary* createButton(NSString* name, int* keycodes, NSString* dynam
     [self.fwdLockView setImage:[UIImage systemImageNamed:@"lock"] forState:UIControlStateNormal];
     self.fwdLockView.layer.cornerRadius = self.fwdLockView.frame.size.width/2;
 
-    self.thumb.frame = CGRectMake(0, 0, minSize/4, minSize/4);
+    // CubeXCraft: по дизайну ручка — 42 % диаметра, кольцо во весь размер
+    BOOL cxcStyle = [self.properties[@"cxcStyle"] boolValue];
+    CGFloat thumbSize = cxcStyle ? minSize * 0.42 : minSize/4;
+    self.thumb.frame = CGRectMake(0, 0, thumbSize, thumbSize);
     self.thumb.center = self.mCenter;
     self.thumb.layer.cornerRadius = self.thumb.frame.size.width/2;
 
-    CGFloat bgSize = minSize - self.thumb.frame.size.width + self.background.layer.borderWidth/2;
+    CGFloat bgSize = cxcStyle ? minSize : minSize - self.thumb.frame.size.width + self.background.layer.borderWidth/2;
     self.background.frame = CGRectMake(0, 0, bgSize, bgSize);
     self.background.layer.cornerRadius = bgSize/2;
     self.background.center = self.mCenter;
@@ -226,6 +229,17 @@ NSMutableDictionary* createButton(NSString* name, int* keycodes, NSString* dynam
     self.background.backgroundColor = self.fwdLockView.backgroundColor = convertARGB2UIColor(propBackgroundColor);
     self.background.layer.borderColor = [convertARGB2UIColor(propStrokeColor) CGColor];
     self.background.layer.borderWidth = propStrokeWidth + 1;
+    if ([self.properties[@"cxcStyle"] boolValue]) {
+        // CubeXCraft: ручка — полупрозрачный красный, рамка и свечение
+        self.background.layer.borderWidth = propStrokeWidth;
+        self.thumb.backgroundColor = convertARGB2UIColor([self.properties[@"thumbColor"] intValue]);
+        self.thumb.layer.borderColor = self.background.layer.borderColor;
+        self.thumb.layer.borderWidth = propStrokeWidth;
+        self.thumb.layer.shadowColor = self.background.layer.borderColor;
+        self.thumb.layer.shadowOpacity = 0.53;
+        self.thumb.layer.shadowRadius = 9;
+        self.thumb.layer.shadowOffset = CGSizeZero;
+    }
 
     // Calculate dynamic position
     CGFloat propX = [self calculateDynamicPos:propDynamicX];

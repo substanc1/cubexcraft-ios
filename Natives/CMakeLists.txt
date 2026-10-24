@@ -110,6 +110,7 @@ add_executable(AngelAuraAmethyst
   cubexcraft/CXCApi.m
   cubexcraft/CXCDevice.m
   cubexcraft/CXCInstaller.m
+  cubexcraft/CXCTouchControls.m
   cubexcraft/CXCWebLauncherViewController.m
 
   ctxbridges/gl_bridge.m
@@ -200,6 +201,7 @@ target_link_libraries(AngelAuraAmethyst
   "-framework CoreFoundation"
   "-framework CoreGraphics"
   "-framework CoreImage"
+  "-framework CoreText"
   "-framework CoreMotion"
   "-framework GameController"
   "-framework IOKit"

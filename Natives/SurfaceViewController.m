@@ -433,7 +433,8 @@ static GameSurfaceView* pojavWindow;
     [self setNeedsUpdateOfPrefersPointerLocked];
 
     // Update buttons visibility
-    [self updateControlHiddenState:NO];
+    // CubeXCraft: в игре свёрнутое «Меню» остаётся свёрнутым после инвентаря; в меню видно всё, что для меню
+    [self updateControlHiddenState:isGrabbing && self.toggleHidden];
 }
 
 - (void)launchMinecraft {
@@ -958,7 +959,10 @@ static GameSurfaceView* pojavWindow;
 
     sender.isToggleOn = !sender.isToggleOn;
     if (sender.isToggleOn) {
-        sender.backgroundColor = [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)];
+        // CubeXCraft: включённая кнопка — цвет из раскладки (toggleColor), иначе по-старому
+        NSNumber *toggleColor = sender.properties[@"toggleColor"];
+        sender.backgroundColor = toggleColor ? convertARGB2UIColor(toggleColor.intValue) :
+            [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)];
         [self executebtn:sender withAction:ACTION_DOWN];
     } else {
         sender.backgroundColor = sender.savedBackgroundColor;

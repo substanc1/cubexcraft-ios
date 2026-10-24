@@ -3,6 +3,7 @@
 #import "CustomControlsUtils.h"
 #import "NSPredicateUtilitiesExternal.h"
 #import "../LauncherPreferences.h"
+#import "../cubexcraft/CXCTouchControls.h"
 #import "../utils.h"
 
 #import <objc/runtime.h>
@@ -203,6 +204,15 @@
 
     [UIView performWithoutAnimation:^{
         [self setTitle:self.properties[@"name"] forState:UIControlStateNormal];
+        if ([self.properties[@"cxcStyle"] boolValue]) {
+            // CubeXCraft: подписи по дизайну — JetBrains Mono 700 12, разрядка .06em, свой цвет
+            NSAttributedString *title = [[NSAttributedString alloc] initWithString:self.properties[@"name"] attributes:@{
+                NSFontAttributeName: CXCControlFont(12),
+                NSForegroundColorAttributeName: convertARGB2UIColor([self.properties[@"textColor"] intValue]),
+                NSKernAttributeName: @(12 * 0.06)
+            }];
+            [self setAttributedTitle:title forState:UIControlStateNormal];
+        }
         [self layoutIfNeeded];
     }];
 }

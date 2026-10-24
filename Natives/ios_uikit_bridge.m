@@ -6,6 +6,7 @@
 #import "LauncherSplitViewController.h"
 #import "PLLogOutputView.h"
 #import "SurfaceViewController.h"
+#import "cubexcraft/CXCTouchControls.h"
 #import "cubexcraft/CXCWebLauncherViewController.h"
 
 #include <objc/runtime.h>
@@ -114,6 +115,8 @@ void UIKit_launchMinecraftSurfaceVC(UIWindow* window, NSDictionary* metadata) {
     setPrefObject(@"internal.selected_account", BaseAuthenticator.current.authData[@"username"]);
     dispatch_async(dispatch_get_main_queue(), ^{
         void (^launch)(void) = ^{
+            // окно уже горизонтальное — раскладка управления под его размер и безопасную зону
+            CXCPrepareTouchControls(window);
             tmpRootVC = window.rootViewController;
             [UIView animateWithDuration:0.2 animations:^{
                 window.alpha = 0;
