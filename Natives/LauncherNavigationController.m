@@ -19,6 +19,7 @@
 #import "utils.h"
 #import "cubexcraft/CXCInstaller.h"
 
+#import <CFNetwork/CFNetwork.h>
 #import <objc/runtime.h>
 #include <sys/time.h>
 
@@ -37,8 +38,29 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 @property(nonatomic) UIButton* buttonInstall;
 @property(nonatomic) UIBarButtonItem* buttonInstallItem;
 @property(nonatomic) int profileSelectedAt;
+@property(nonatomic) BOOL cxcJITHelpersChecked;
 
 @end
+
+// CubeXCraft: JIT включает StikDebug (App Store), а ему нужен включённый LocalDevVPN (App Store) — без них
+// игрок застревал на «Ожидание JIT». Перед прыжком в StikDebug проверяем оба и подсказываем, что сделать.
+static NSString *const kCXCStikDebugStore = @"itms-apps://apps.apple.com/app/id6744045754";
+static NSString *const kCXCLocalDevVPNStore = @"itms-apps://apps.apple.com/app/id6755608044";
+
+static BOOL CXCStikDebugInstalled(void) {
+    return [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:@"stikjit://"]];
+}
+
+// Включён ли какой-нибудь VPN: туннельные интерфейсы в настройках прокси системы (LocalDevVPN — utun)
+static BOOL CXCVPNActive(void) {
+    NSDictionary *settings = CFBridgingRelease(CFNetworkCopySystemProxySettings());
+    for (NSString *name in [settings[@"__SCOPED__"] allKeys]) {
+        if ([name hasPrefix:@"utun"] || [name hasPrefix:@"ipsec"] || [name hasPrefix:@"ppp"] || [name hasPrefix:@"tun"]) {
+            return YES;
+        }
+    }
+    return NO;
+}
 
 @implementation LauncherNavigationController
 
@@ -495,6 +517,10 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         handler();
         return;
     } else if (@available(iOS 17.4, *)) {
+        if (!self.cxcJITHelpersChecked && ![self cxcCheckJITHelpers:handler]) {
+            return;
+        }
+        self.cxcJITHelpersChecked = NO;
         NSString *scriptDataString = @"";
         if(DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM)) {
             NSData *scriptData = [NSData dataWithContentsOfFile:[NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
@@ -528,6 +554,36 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             [alert dismissViewControllerAnimated:YES completion:handler];
         });
     });
+}
+
+// YES — всё на месте, можно открывать StikDebug; NO — показали подсказку, продолжит она сама
+- (BOOL)cxcCheckJITHelpers:(void(^)(void))handler {
+    NSString *title, *message, *store;
+    if (!CXCStikDebugInstalled()) {
+        title = @"Нужен StikDebug";
+        message = @"Игра на iPhone запускается с JIT, а включает его бесплатное приложение StikDebug. Установите его из App Store и снова нажмите «Играть».";
+        store = kCXCStikDebugStore;
+    } else if (!CXCVPNActive()) {
+        title = @"Включите LocalDevVPN";
+        message = @"StikDebug работает через LocalDevVPN. Откройте LocalDevVPN, включите его и вернитесь сюда. Если его нет — установите из App Store.";
+        store = kCXCLocalDevVPNStore;
+    } else {
+        return YES;
+    }
+    NSLog(@"[CXC] JIT: %@", title);
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:message
+        preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Открыть App Store" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:store] options:@{} completionHandler:nil];
+    }]];
+    // проверка VPN приблизительная — даём продолжить, если игрок уверен
+    [alert addAction:[UIAlertAction actionWithTitle:@"Продолжить" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+        self.cxcJITHelpersChecked = YES;
+        [self invokeAfterJITEnabled:handler];
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+    return NO;
 }
 
 #pragma mark - UIPopoverPresentationControllerDelegate
