@@ -112,6 +112,7 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
         inFile:@"config/modernfix-mixins.properties" gameDir:gameDir manifest:manifest];
     saveJSONToFile(_hashCache, _hashCachePath);
     [self skipIntroIfLowMemory:gameDir];
+    [self disableGTBloom:gameDir];
 
     // 3. Описание версии для Amethyst
     error = [self writeVersionJson:profile libraries:libraries];
@@ -206,6 +207,45 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
         [mark writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
         NSLog(@"[CXC] заставка пропущена (нет права на расширенную память): %@", mark);
     }
+}
+
+// GregTech: свечение (bloom) выключено. Без Sodium чанки строит обычный путь Minecraft, и в нём GTCEu 8.0.0 падает
+// «Not building!» на светящихся блоках (24.10, iPhone 16 Pro, gtceu:hpca_heat_sink_component). При type: DISABLED
+// GTCEu не подключает свечение к сборке чанков (BloomShaderManager.isBloomActive), заодно меньше работы видеокарте.
+// Файла ещё нет (первый запуск) — пишем только этот ключ: остальное мод дополнит значениями по умолчанию.
+- (void)disableGTBloom:(NSString *)gameDir {
+    NSString *path = [gameDir stringByAppendingPathComponent:@"config/gtceu.yaml"];
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    NSString *result = nil;
+    if (text.length == 0) {
+        result = @"client:\n  bloom:\n    type: DISABLED\n";
+    } else {
+        NSMutableArray<NSString *> *lines = [[text componentsSeparatedByString:@"\n"] mutableCopy];
+        NSString *section = nil, *sub = nil;
+        for (NSUInteger i = 0; i < lines.count; i++) {
+            NSString *line = lines[i];
+            NSString *trimmed = [line stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+            if (trimmed.length == 0 || [trimmed hasPrefix:@"#"]) continue;
+            if (![line hasPrefix:@" "]) {
+                section = line;
+                sub = nil;
+            } else if (![line hasPrefix:@"   "]) {
+                sub = line;
+            } else if ([section isEqualToString:@"client:"] && [sub isEqualToString:@"  bloom:"] && [line hasPrefix:@"    type:"]) {
+                if ([trimmed isEqualToString:@"type: DISABLED"]) return;
+                lines[i] = @"    type: DISABLED";
+                result = [lines componentsJoinedByString:@"\n"];
+                break;
+            }
+        }
+        if (!result) {
+            NSLog(@"[CXC] config/gtceu.yaml: не нашёл client.bloom.type");
+            return;
+        }
+    }
+    [NSFileManager.defaultManager createDirectoryAtPath:path.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
+    [result writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    NSLog(@"[CXC] config/gtceu.yaml: client.bloom.type: DISABLED");
 }
 
 // key=value в .properties сборки; файл дальше считается серверным (по кэшу хэшей), чтобы не перекачивать каждый раз
