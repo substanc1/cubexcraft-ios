@@ -99,13 +99,14 @@ static NSString *const kLibrariesDir = @"CubeXCraft";
     error = [self planLibraries:profile manifest:manifest libManifest:libManifest cxlManifest:cxlManifest
         libraries:libraries jobs:jobs];
     if (error) return error;
+    NSArray *desktopMods = [self planDesktopMods:libManifest gameDir:gameDir jobs:jobs];
 
     error = [self download:jobs];
     saveJSONToFile(_hashCache, _hashCachePath);
     if (error) return error;
     if (self.cancelled) return @"Отменено";
 
-    [self removeExtras:manifest profile:profile gameDir:gameDir];
+    [self removeExtras:manifest profile:profile gameDir:gameDir keep:desktopMods];
     // ModernFix: патч на рассказчик ищет com.mojang.text2speech.OperatingSystem, а у Amethyst своя заглушка
     // text2speech без него → MixinTransformerError при создании окна (24.10, iPhone 16 Pro)
     [self ensureProperty:@"mixin.feature.suppress_narrator_stacktrace" value:@"false"
@@ -172,7 +173,27 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
     }
 }
 
-- (void)removeExtras:(NSDictionary *)manifest profile:(NSDictionary *)profile gameDir:(NSString *)gameDir {
+// Sodium и наш экран его настроек — из сборки ПК (24.10, проба по слову владельца). Без Sodium чанки строит обычный
+// путь Minecraft, и на подгрузке мира игра дёргалась (сборка мусора ни при чём: паузы 11 мс в среднем).
+// Проверки Sodium проходят: LWJGL 3.3.3, переменных PojavLauncher (POJAV_RENDERER) у Amethyst нет.
+- (NSArray<NSString *> *)planDesktopMods:(NSDictionary *)libManifest gameDir:(NSString *)gameDir jobs:(NSMutableArray *)jobs {
+    NSMutableArray *kept = [NSMutableArray new];
+    NSDictionary *files = libManifest[@"files"];
+    for (NSString *path in files) {
+        NSString *name = path.lastPathComponent;
+        if (![path hasPrefix:@"mods/"] || !([name hasPrefix:@"sodium-neoforge-"] || [name hasPrefix:@"cubexcraft-sodiumui-"])) continue;
+        [kept addObject:path];
+        NSArray *meta = files[path];
+        NSString *dest = [gameDir stringByAppendingPathComponent:path];
+        if ([NSFileManager.defaultManager fileExistsAtPath:dest] && [[self sha1Of:dest] isEqualToString:meta[1]]) continue;
+        [jobs addObject:@{@"url": [libManifest[@"base"] stringByAppendingString:[self urlEncodePath:path]], @"dest": dest,
+            @"size": meta[0], @"sha1": meta[1]}];
+    }
+    NSLog(@"[CXC] моды с ПК: %@", [kept componentsJoinedByString:@", "]);
+    return kept;
+}
+
+- (void)removeExtras:(NSDictionary *)manifest profile:(NSDictionary *)profile gameDir:(NSString *)gameDir keep:(NSArray *)keep {
     NSDictionary *files = manifest[@"files"];
     NSFileManager *fm = NSFileManager.defaultManager;
     for (NSString *dir in profile[@"updateVerify"] ?: @[@"mods"]) {
@@ -182,7 +203,7 @@ static BOOL pathMatches(NSString *path, NSArray *prefixes) {
             NSString *path = [dir stringByAppendingPathComponent:rel];
             BOOL isDir;
             [fm fileExistsAtPath:[root stringByAppendingPathComponent:rel] isDirectory:&isDir];
-            if (!isDir && !files[path]) {
+            if (!isDir && !files[path] && ![keep containsObject:path]) {
                 NSLog(@"[CXC] лишний файл сборки удалён: %@", path);
                 [fm removeItemAtPath:[root stringByAppendingPathComponent:rel] error:nil];
             }
