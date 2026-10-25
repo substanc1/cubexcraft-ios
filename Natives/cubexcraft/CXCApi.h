@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // API лаунчера CubeXCraft (https://www.cubexcraft.site/api/launcher/v1) — тот же протокол, что у десктопа
 // и Android: вход с 2FA через Telegram, профили сборок, манифесты файлов, токен игры.
 #import <Foundation/Foundation.h>

@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Управление CubeXCraft в игре (SCRUM-363): раскладка по дизайну touch-controls.json — размеры и отступы в % высоты
 // экрана, отступы от безопасной зоны. Пишется перед каждым запуском игры под текущий экран и язык.
 #import <UIKit/UIKit.h>

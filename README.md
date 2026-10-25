@@ -1,3 +1,7 @@
+> **CubeXCraft для iPhone** — лаунчер проекта [CubeXCraft](https://www.cubexcraft.site), модифицированная версия Angel Aura Amethyst (GPL-3.0).
+> Лицензия, дополнительные условия и бренд — [CUBEXCRAFT.md](CUBEXCRAFT.md), уязвимости — [SECURITY.md](SECURITY.md). Официальные сборки — только с https://www.cubexcraft.site.
+> Ниже — исходное описание Angel Aura Amethyst. / CubeXCraft for iPhone, a modified version of Angel Aura Amethyst (GPL-3.0); see CUBEXCRAFT.md. The original README follows.
+
 # Angel Aura Amethyst (iOS)
 [![Development build](https://github.com/AngelAuraMC/Amethyst-iOS/actions/workflows/development.yml/badge.svg?branch=main)](https://github.com/AngelAuraMC/Amethyst-iOS/actions/workflows/development.yml)
 [![Crowdin](https://badges.crowdin.net/angelauramc/localized.svg)](https://crowdin.com/project/angelauramc)

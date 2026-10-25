@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Аккаунт CubeXCraft: вход логином/паролем сайта (+ подтверждение в Telegram, если привязан), токен лаунчера —
 // в связке ключей, перед каждым запуском — свежий токен игры (POST /game/session), как у десктопа.
 #import "BaseAuthenticator.h"

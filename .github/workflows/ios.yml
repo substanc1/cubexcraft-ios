@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# публичное репо: токену сборки — только чтение, IPA живёт 3 дня (официальная раздача — сайт)
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-15
@@ -45,3 +49,4 @@ jobs:
           name: CubeXCraft-ios
           path: artifacts/CubeXCraft-*-ios.ipa
           if-no-files-found: error
+          retention-days: 3

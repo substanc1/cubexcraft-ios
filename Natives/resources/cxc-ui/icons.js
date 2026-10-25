@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Иконки интерфейса из handoff Claude Design (сетка 24×24, currentColor, stroke 1.75)
 window.CXC_ICONS = {
  "alert": "<path d=\"M12 3.5l9.5 16.5h-19z\"/><path d=\"M12 10v4.5M12 17.4v.1\"/>",

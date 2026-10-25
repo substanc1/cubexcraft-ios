@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Лаунчер CubeXCraft (SCRUM-363): экраны по дизайну — страница cxc-ui/index.html в WKWebView, всё остальное
 // (вход, API сайта, сборка, JIT, запуск игры) — родной код. Приложение открывается сразу в него.
 #import <UIKit/UIKit.h>

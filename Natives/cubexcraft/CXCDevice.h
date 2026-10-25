@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Качество под телефон: «Авто» выбирает по памяти устройства, игрок может переключить вручную.
 //   Максимум      — 8+ ГБ (iPhone 15 Pro, 16, 16 Pro, 17): полные текстуры 32×, красивая графика, дальность 8, шейдеры;
 //   Сбалансировано — 6 ГБ (iPhone 13 Pro/14/15): лёгкий пак 16×, быстрая графика, дальность 7;

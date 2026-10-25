@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Строки интерфейса RU/EN: strings.json из handoff Claude Design + шаблоны для живых данных (SCRUM-363)
 window.CXC_STR = {
  "fr_ingame": {

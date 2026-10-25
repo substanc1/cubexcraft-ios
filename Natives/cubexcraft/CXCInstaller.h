@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Установка и обновление сборки CubeXTech перед запуском: профиль с сайта → файлы сборки (моды, конфиги, пак) с
 // проверкой SHA-1 → описание версии NeoForge для Amethyst (библиотеки с нашей раздачи, LWJGL — свой у Amethyst).
 #import <Foundation/Foundation.h>

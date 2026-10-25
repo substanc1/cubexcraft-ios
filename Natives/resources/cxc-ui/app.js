@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 // Лаунчер CubeXCraft для iPhone (SCRUM-363): экраны по handoff Claude Design «CubeXCraft Mobile iOS».
 // Всё, что трогает телефон и сеть (вход, API сайта, установка сборки, JIT, запуск игры), делает родной код
 // через window.webkit.messageHandlers.cxc (ответ — Promise); события от него приходят в window.cxc.emit.

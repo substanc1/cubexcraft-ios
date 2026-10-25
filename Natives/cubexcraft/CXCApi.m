@@ -1,3 +1,4 @@
+// © 2026 CubeXCraft (https://www.cubexcraft.site). GPL-3.0 with additional terms (GPLv3 §7: attribution, origin, trademarks), see CUBEXCRAFT.md.
 #import <Security/Security.h>
 #import <UIKit/UIKit.h>
 #import "CXCApi.h"
