@@ -29,8 +29,12 @@ window.CXC_STR = {
   "en": "not installed"
  },
  "su_stik_h": {
-  "ru": "Нужен, чтобы включить JIT",
-  "en": "Needed to enable JIT"
+  "ru": "Нужен, чтобы включить JIT. В App Store его больше нет — его ставит установщик CubeXCraft на компьютере: переустановите CubeXCraft через него.",
+  "en": "Needed to enable JIT. It is no longer in the App Store — the CubeXCraft installer on your computer installs it: reinstall CubeXCraft with it."
+ },
+ "su_stik_how": {
+  "ru": "Как поставить",
+  "en": "How to install"
  },
  "su_install": {
   "ru": "Установить из App Store",

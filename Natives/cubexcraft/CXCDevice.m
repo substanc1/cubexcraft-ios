@@ -71,7 +71,8 @@ static NSString *cxcProcessMemoryDetails(void) {
 + (void)openHelper:(NSString *)app {
     NSString *url;
     if ([app isEqual:@"stik"]) {
-        url = self.stikDebugInstalled ? @"stikjit://" : @"itms-apps://apps.apple.com/app/id6744045754";
+        // StikDebug убран из App Store (25.10) — его ставит CubeXCraft Installer; нет его — инструкция на сайте
+        url = self.stikDebugInstalled ? @"stikjit://" : @"https://www.cubexcraft.site/?install=iphone";
     } else {
         // localdevvpn://enable?scheme=… — LocalDevVPN включает туннель и через секунду открывает нашу схему
         url = self.localDevVPNInstalled ? @"localdevvpn://enable?scheme=cubexcraft" : @"itms-apps://apps.apple.com/app/id6755608044";

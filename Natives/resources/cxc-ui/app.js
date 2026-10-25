@@ -134,7 +134,7 @@
       <h1 class="title">${st.done ? t('su_t_done') : t('su_t')}</h1>
       <p class="lead" style="margin-top:-6px">${st.done ? t('su_p_done') : t('su_p')}</p>
       <div style="display:flex;flex-direction:column;gap:10px">
-        ${row(t('su_stik'), st.stik, t('su_stik_ok'), t('su_stik_no'), t('su_stik_h'), `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="stik">${t('su_install')}</div></div>`)}
+        ${row(t('su_stik'), st.stik, t('su_stik_ok'), t('su_stik_no'), t('su_stik_h'), `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="stik">${t('su_stik_how')}</div></div>`)}
         ${row(t('su_vpn'), st.vpn, t('su_vpn_ok'), t('su_vpn_no'), t('su_vpn_h'), st.vpnApp ? `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="vpn">${t('su_vpn_on')}</div></div>` : `<div style="margin-top:12px"><div class="btn primary small tap" data-act="store" data-arg="vpn">${t('su_install')}</div></div>`)}
         ${row(t('su_jit'), ready, t('su_jit_ok'), t('su_jit_no'), t('su_jit_h'))}
       </div></div></div>
