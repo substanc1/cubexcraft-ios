@@ -106,6 +106,7 @@ static BOOL cxcLandscapeForGame = NO;
     NSString *cmd = m[@"cmd"];
     if ([cmd isEqual:@"init"]) [self cmdInit:reply];
     else if ([cmd isEqual:@"api"]) [self cmdApi:m reply:reply];
+    else if ([cmd isEqual:@"image"]) [self cmdImage:m reply:reply];
     else if ([cmd isEqual:@"projectState"]) [self cmdProjectState:m reply:reply];
     else if ([cmd isEqual:@"login"]) [self cmdLogin:m reply:reply];
     else if ([cmd isEqual:@"cancelLogin"]) { self.pendingLogin.cancelled = YES; reply(@{}, nil); }
@@ -189,6 +190,25 @@ static BOOL cxcLandscapeForGame = NO;
             else reply(@{@"status": @(status), @"json": json ?: @{}}, nil);
         });
     }];
+}
+
+// обложка новости сайта как data:-адрес для ленты на главном экране (только картинки с сайта, до 2 МБ)
+- (void)cmdImage:(NSDictionary *)m reply:(CXCReply)reply {
+    NSString *url = [m[@"url"] isKindOfClass:NSString.class] ? m[@"url"] : nil;
+    NSURL *u = [url hasPrefix:@"https://www.cubexcraft.site/"] ? [NSURL URLWithString:url] : nil;
+    if (!u) {
+        reply(@{}, nil);
+        return;
+    }
+    [[NSURLSession.sharedSession dataTaskWithURL:u completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+        NSInteger code = [resp isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)resp).statusCode : 0;
+        NSString *type = resp.MIMEType ?: @"";
+        NSDictionary *out = @{};
+        if (!err && code == 200 && [type hasPrefix:@"image/"] && data.length <= (2 << 20)) {
+            out = @{@"data": [NSString stringWithFormat:@"data:%@;base64,%@", type, [data base64EncodedStringWithOptions:0]]};
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{ reply(out, nil); });
+    }] resume];
 }
 
 // «gtceu-1.21.1-8.0.0.jar» → «gtceu»: имя без версии и загрузчика (названий модов API не отдаёт)

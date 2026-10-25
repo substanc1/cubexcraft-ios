@@ -245,3 +245,18 @@ svg.i { flex: none; }
 .empty .t { font-family: var(--head); font-weight: 600; font-size: 16px; color: var(--text); }
 .empty .p { font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--body); }
 .toast { position: absolute; left: 16px; right: 16px; bottom: calc(90px + env(safe-area-inset-bottom)); z-index: 40; padding: 12px 14px; border: 1px solid var(--line3); background: #1a0609; color: #ffd6d9; font-family: var(--sans); font-size: 13px; font-weight: 600; }
+
+/* новости сайта и кнопка «Голосовать» на главном экране (windows-claude 25.10) */
+.vote { margin-top: 10px; padding: 14px 16px; border: 1px solid var(--green); background: #00ff9f14; box-shadow: 0 0 24px -14px var(--green);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.vote .t { display: flex; align-items: center; gap: 10px; font-family: var(--head); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+.vote .r { margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.newslist { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.news { border: 1px solid var(--line); background: #0e0609; overflow: hidden; }
+.news .cv { display: block; width: 100%; aspect-ratio: 2.4; object-fit: cover; border-bottom: 1px solid var(--line); }
+.news .cv.ph { background: linear-gradient(135deg, #140609, #0b0714); }
+.news .tx { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px; }
+.news .d { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--muted); }
+.news .h { font-weight: 700; font-size: 15px; line-height: 1.35; color: var(--text); }
+.news .b { font-size: 13px; line-height: 1.55; color: var(--muted); white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.news.open .b { display: block; -webkit-line-clamp: unset; }

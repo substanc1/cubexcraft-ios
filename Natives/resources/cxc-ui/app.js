@@ -14,6 +14,7 @@
     modsOpen: false, login: { login: '', password: '', busy: false, twofa: false, error: null },
     setup: { stik: false, vpn: false, vpnApp: false, checking: false, done: false },
     prep: null, jit: null, sheet: null, dialog: null, toast: null, wallet: null, addNick: '', versionTaps: 0,
+    news: null, vote: null, newsOpen: null,
   };
 
   // ---------- мелочи ----------
@@ -97,7 +98,28 @@
     render();
     loadState();
     presence();
+    loadNews();
   }
+
+  // новости сайта и кнопка «Голосовать» (API /news, без входа). Обложки — data:-адресами через родной код:
+  // WebView ходил бы к сайту напрямую, а родной код качает их сам
+  async function loadNews() {
+    try {
+      const r = await api('/news', { auth: false });
+      S.news = r.news || [];
+      S.vote = r.vote && r.vote.url ? r.vote : null;
+    } catch (e) {
+      if (!S.news) S.news = 'error';
+    }
+    if (S.screen === 'main') render();
+    for (const n of Array.isArray(S.news) ? S.news : []) {
+      if (!n.cover || n.coverData) continue;
+      native('image', { url: n.cover }).then((d) => {
+        if (d && d.data) { n.coverData = d.data; if (S.screen === 'main') render(); }
+      }).catch(() => { /* без обложки */ });
+    }
+  }
+  const newsDate = (d) => { const x = new Date(d); return isNaN(x) ? '' : x.toLocaleDateString(S.lang === 'ru' ? 'ru-RU' : 'en-GB'); };
   async function loadState() {
     const s = selected();
     const p = s && playable(s);
@@ -232,7 +254,8 @@
       body = `<div class="pad">${nodeBlock(s, p)}
         <div>${kick(`${t('mn_net')} · ${S.servers.length}`, 'red')}<div class="list">${net}</div></div>
         ${modsBlock}
-        <div>${kick(t('mn_feed'), 'red')}<div class="soon">${t('mn_soon')}</div></div>
+        <div>${kick(t('mn_feed'), 'red')}${S.vote ? `<div class="vote tap" data-act="url" data-arg="${esc(S.vote.url)}"><div class="t">${icon('external', 18)}<span>${t('mn_vote')}</span></div>${S.vote.reward ? `<div class="r">${t('mn_vote_r').replace('{n}', S.vote.reward)}</div>` : ''}</div>` : ''}
+          <div class="newslist">${Array.isArray(S.news) && S.news.length ? S.news.map((n) => `<div class="news tap ${S.newsOpen === n.id ? 'open' : ''}" data-act="news" data-arg="${n.id}">${n.coverData ? `<img class="cv" src="${n.coverData}" alt="">` : n.cover ? '<div class="cv ph"></div>' : ''}<div class="tx"><div class="d">${esc(newsDate(n.date))}</div><div class="h">${esc(n.title)}</div><div class="b">${esc(n.body)}</div></div></div>`).join('') : `<div class="soon">${S.news === 'error' ? t('mn_news_err') : S.news ? t('mn_news_empty') : '…'}</div>`}</div></div>
         ${friendsBlock}</div>`;
     }
     let foot;
@@ -429,6 +452,7 @@
       loadState();
     },
     mods: () => { S.modsOpen = !S.modsOpen; render(); },
+    news: (id) => { S.newsOpen = S.newsOpen === +id ? null : +id; render(); },
     async setupCheck() {
       if (S.setup.done || S.setup.checking) return;
       S.setup.checking = true;

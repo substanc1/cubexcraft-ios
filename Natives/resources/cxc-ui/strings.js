@@ -173,8 +173,24 @@ window.CXC_STR = {
   "en": "Network"
  },
  "mn_feed": {
-  "ru": "Лента",
-  "en": "Feed"
+  "ru": "Новости",
+  "en": "News"
+ },
+ "mn_vote": {
+  "ru": "Голосовать за проект",
+  "en": "Vote for the project"
+ },
+ "mn_vote_r": {
+  "ru": "+{n} CX за голос на каждой площадке",
+  "en": "+{n} CX per vote on each site"
+ },
+ "mn_news_empty": {
+  "ru": "Новостей пока нет",
+  "en": "No news yet"
+ },
+ "mn_news_err": {
+  "ru": "Новости не загрузились",
+  "en": "News did not load"
  },
  "mn_soon": {
   "ru": "Скоро",
