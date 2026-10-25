@@ -117,6 +117,8 @@ void CXCPrepareTouchControls(UIWindow *window) {
         @[label(@"Инвентарь", @"Inventory"), @(GLFW_KEY_E)],
         @[label(@"Игроки", @"Players"), @(GLFW_KEY_TAB)],
         @[label(@"Вид 1/3", @"View 1/3"), @(GLFW_KEY_F5)],
+        // F3 — экран отладки: кадры, координаты (владелец 25.10: «верни кнопку дебаг-меню, чтоб скрывалась при скрытии»)
+        @[@"F3", @(GLFW_KEY_F3)],
         @[label(@"Пауза", @"Pause"), @(GLFW_KEY_ESCAPE)]
     ];
     CGFloat groupW = pct(20), gap = pct(1.5);
