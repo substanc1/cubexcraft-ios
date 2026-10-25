@@ -48,6 +48,8 @@
 #define SPECIALBTN_SCROLLUP -7
 #define SPECIALBTN_SCROLLDOWN -8
 #define SPECIALBTN_MENU -9
+// CubeXCraft: «i» — подсказка, как работает управление (CXCShowControlsHelp)
+#define SPECIALBTN_CXC_HELP -20
 
 #define NSDebugLog(...) if (debugLogEnabled) { NSLog(__VA_ARGS__); }
 BOOL debugLogEnabled, isJailbroken;

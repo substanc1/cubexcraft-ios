@@ -7,6 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 // controlmap/cubexcraft.json + control.default_ctrl и control.control_safe_area; window — уже горизонтальное окно игры
 void CXCPrepareTouchControls(UIWindow *window);
 
+// «i» в игре: поверх игры — как работает управление (кнопки и жесты); закрывается «Понятно» или тапом мимо
+void CXCShowControlsHelp(UIView *host);
+
 // JetBrains Mono 700 из приложения (подписи кнопок), запасной — моноширинный системный
 UIFont *CXCControlFont(CGFloat size);
 

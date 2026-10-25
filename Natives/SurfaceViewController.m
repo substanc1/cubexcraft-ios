@@ -18,6 +18,7 @@
 #import "PLProfiles.h"
 #import "SurfaceViewController.h"
 #import "TrackedTextField.h"
+#import "cubexcraft/CXCTouchControls.h"
 #import "UIKit+hook.h"
 #import "ios_uikit_bridge.h"
 
@@ -937,6 +938,12 @@ static GameSurfaceView* pojavWindow;
                 case SPECIALBTN_MENU:
                     if (!held) {
                         [self actionOpenNavigationMenu];
+                    }
+                    break;
+
+                case SPECIALBTN_CXC_HELP:
+                    if (!held) {
+                        CXCShowControlsHelp(self.view);
                     }
                     break;
 

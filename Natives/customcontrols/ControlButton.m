@@ -205,11 +205,12 @@
     [UIView performWithoutAnimation:^{
         [self setTitle:self.properties[@"name"] forState:UIControlStateNormal];
         if ([self.properties[@"cxcStyle"] boolValue]) {
-            // CubeXCraft: подписи по дизайну — JetBrains Mono 700 12, разрядка .06em, свой цвет
+            // CubeXCraft: подписи по дизайну — JetBrains Mono 700 12 (cxcFontSize — свой размер), разрядка .06em, свой цвет
+            CGFloat fontSize = [self.properties[@"cxcFontSize"] floatValue] ?: 12;
             NSAttributedString *title = [[NSAttributedString alloc] initWithString:self.properties[@"name"] attributes:@{
-                NSFontAttributeName: CXCControlFont(12),
+                NSFontAttributeName: CXCControlFont(fontSize),
                 NSForegroundColorAttributeName: convertARGB2UIColor([self.properties[@"textColor"] intValue]),
-                NSKernAttributeName: @(12 * 0.06)
+                NSKernAttributeName: @(fontSize * 0.06)
             }];
             [self setAttributedTitle:title forState:UIControlStateNormal];
         }
